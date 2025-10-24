@@ -44,6 +44,11 @@ public class User extends BaseTenantEntity {
 
     private LocalDateTime lastLoginAt;
 
+
+
+    @Id
+    @Column(name = "user_id", nullable = false)
+    private String userId;
     @PrePersist
     public void generateUserId() {
         if (this.userId == null) {
