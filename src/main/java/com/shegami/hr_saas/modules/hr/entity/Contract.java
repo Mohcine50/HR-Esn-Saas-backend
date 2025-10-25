@@ -42,8 +42,8 @@ public class Contract {
     private String contractId;
     @PrePersist
     public void generateContractId() {
-        if (this.clientId == null) {
-            this.clientId = "CTR-" + UUID.randomUUID();
+        if (this.contractId == null) {
+            this.contractId = "CTR-" + UUID.randomUUID();
         }
     }
 }

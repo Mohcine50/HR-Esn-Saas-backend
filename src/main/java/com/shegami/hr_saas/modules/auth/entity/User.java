@@ -17,10 +17,6 @@ import java.util.UUID;
 public class User extends BaseTenantEntity {
 
 
-    @Id
-    @Column(name = "user_id", nullable = false)
-    private String userId;
-
     private String firstName;
     private String lastName;
 
