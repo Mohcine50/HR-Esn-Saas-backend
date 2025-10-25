@@ -1,7 +1,9 @@
-package com.shegami.hr_saas.modules.auth.entity;
+package com.shegami.hr_saas.modules.auth.dto;
 
+import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Value;
 
 import java.io.Serializable;
@@ -12,6 +14,7 @@ import java.util.List;
  * DTO for {@link User}
  */
 @Value
+@Builder
 public class UserDto implements Serializable {
     @NotNull
     TenantDto tenant;

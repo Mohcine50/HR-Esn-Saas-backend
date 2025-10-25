@@ -1,5 +1,6 @@
-package com.shegami.hr_saas.modules.auth.entity;
+package com.shegami.hr_saas.modules.auth.dto;
 
+import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import lombok.Value;
 
 import java.io.Serializable;

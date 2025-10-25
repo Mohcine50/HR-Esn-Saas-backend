@@ -1,5 +1,6 @@
-package com.shegami.hr_saas.modules.auth.entity;
+package com.shegami.hr_saas.modules.auth.dto;
 
+import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.enums.SubscriptionPlan;
 import com.shegami.hr_saas.modules.auth.enums.TenantStatus;
 import lombok.Value;
