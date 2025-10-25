@@ -3,6 +3,8 @@ package com.shegami.hr_saas.modules.auth.entity;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,7 +21,6 @@ public class User extends BaseTenantEntity {
 
     private String firstName;
     private String lastName;
-
 
     private String email;
     private String password;
