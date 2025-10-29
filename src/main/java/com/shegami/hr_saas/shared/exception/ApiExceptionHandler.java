@@ -2,6 +2,7 @@ package com.shegami.hr_saas.shared.exception;
 
 import com.shegami.hr_saas.modules.auth.exception.TenantNotFoundException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
+import com.shegami.hr_saas.modules.auth.exception.UserRoleNotFoundException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +48,14 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(value = TenantNotFoundException.class)
     public ResponseEntity<Object> handleTenantNotFoundException(TenantNotFoundException notFoundException) {
+
+        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = UserRoleNotFoundException.class)
+    public ResponseEntity<Object> handleUserRoleNotFoundException(UserRoleNotFoundException notFoundException) {
 
         ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
 
