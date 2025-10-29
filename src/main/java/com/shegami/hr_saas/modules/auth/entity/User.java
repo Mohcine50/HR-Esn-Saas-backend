@@ -38,9 +38,7 @@ public class User extends BaseTenantEntity {
     private UserStatus status;
 
 
-
     private LocalDateTime lastLoginAt;
-
 
 
     @Id

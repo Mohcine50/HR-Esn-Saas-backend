@@ -1,4 +1,4 @@
-package com.shegami.hr_saas.shared.exception;
+package com.shegami.hr_saas.modules.auth.exception;
 
 public class UserNotFoundException extends RuntimeException{
     public UserNotFoundException(String message) {

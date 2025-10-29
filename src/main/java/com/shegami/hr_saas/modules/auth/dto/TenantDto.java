@@ -3,6 +3,8 @@ package com.shegami.hr_saas.modules.auth.dto;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.enums.SubscriptionPlan;
 import com.shegami.hr_saas.modules.auth.enums.TenantStatus;
+import lombok.Builder;
+import lombok.Data;
 import lombok.Value;
 
 import java.io.Serializable;
@@ -12,6 +14,8 @@ import java.time.LocalDateTime;
  * DTO for {@link Tenant}
  */
 @Value
+@Builder
+@Data
 public class TenantDto implements Serializable {
     String tenantId;
     String name;

@@ -31,8 +31,6 @@ public class JwtConfig {
     private RsaKeysConfig rsaKeysConfig;
 
 
-
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

@@ -1,20 +1,23 @@
 package com.shegami.hr_saas.modules.auth.controller;
 
 
-import com.shegami.hr_saas.modules.auth.dto.InviteDto;
-import com.shegami.hr_saas.modules.auth.dto.LoginDto;
-import com.shegami.hr_saas.modules.auth.dto.RefreshDto;
-import com.shegami.hr_saas.modules.auth.dto.RegisterDto;
+import com.shegami.hr_saas.modules.auth.dto.*;
+import com.shegami.hr_saas.modules.auth.service.AuthService;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
+
+    public final AuthService authService;
 
 
     @PostMapping("login")
@@ -23,8 +26,11 @@ public class AuthController {
     }
 
     @PostMapping("signup")
-    public ResponseEntity<Object> register(RegisterDto registerDto){
-        return null;
+    public ResponseEntity<RegisterResponseDto> register(@RequestBody RegisterDto registerDto){
+
+        RegisterResponseDto register = authService.register(registerDto);
+
+        return new ResponseEntity<>(register, HttpStatus.OK);
     }
     @PostMapping("refresh")
     public ResponseEntity<Object> refresh(RefreshDto refreshDto){

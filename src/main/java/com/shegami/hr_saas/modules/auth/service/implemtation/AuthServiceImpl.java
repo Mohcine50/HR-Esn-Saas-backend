@@ -1,20 +1,24 @@
-package com.shegami.hr_saas.modules.auth.service;
+package com.shegami.hr_saas.modules.auth.service.implemtation;
 
-import com.shegami.hr_saas.modules.auth.dto.LoginDto;
-import com.shegami.hr_saas.modules.auth.dto.LoginResponseDto;
-import com.shegami.hr_saas.modules.auth.dto.RegisterDto;
-import com.shegami.hr_saas.modules.auth.dto.RegisterResponseDto;
+import com.shegami.hr_saas.modules.auth.dto.*;
+import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
-import com.shegami.hr_saas.shared.exception.ApiRequestException;
+import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
+import com.shegami.hr_saas.modules.auth.service.AuthService;
+import com.shegami.hr_saas.modules.auth.service.TenantService;
+import com.shegami.hr_saas.modules.auth.service.UserService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -23,12 +27,16 @@ import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
 
     private final JwtEncoder jwtEncoder;
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
+    private final TenantService tenantService;
+
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public LoginResponseDto login(LoginDto loginDto) {
@@ -42,21 +50,28 @@ public class AuthServiceImpl implements AuthService {
 
     }
 
+    @Transactional
     @Override
     public RegisterResponseDto register(RegisterDto registerDto) {
 
-        User user = userService.findUserByEmail(registerDto.getEmail());
+        userService.findUserByEmail(registerDto.getEmail()).ifPresent(u -> {
+            throw new UserAlreadyExistException("User already exists, please try another email.");
+        });
 
-        if (user != null) {
-            throw new ApiRequestException("Username already exists");
-        }
+        Tenant tenant = tenantService.createTenant(TenantDto.builder()
+                .name(registerDto.getCompanyName())
+                .domain(registerDto.getCompanyDomain())
+                .build());
 
 
-        boolean userRegistered = userService.createUser(registerDto);
 
-        if (!userRegistered) {
-            throw new ApiRequestException("REGISTER NOT COMPLETED");
-        }
+        userService.createUser(UserDto.builder()
+                        .email(registerDto.getEmail())
+                        .password(passwordEncoder.encode(registerDto.getPassword()))
+                        .firstName(registerDto.getFirstName())
+                        .lastName(registerDto.getLastName())
+                        .phoneNumber(registerDto.getPhone())
+                .build(), tenant);
 
         String jwtAccessToken = AuthUser(registerDto.getEmail(), registerDto.getPassword());
         return new RegisterResponseDto(jwtAccessToken,"REGISTER SUCCESSFULLY");
@@ -64,7 +79,6 @@ public class AuthServiceImpl implements AuthService {
 
 
     private String AuthUser(String email, String password) {
-
 
 
         Instant instant = Instant.now();

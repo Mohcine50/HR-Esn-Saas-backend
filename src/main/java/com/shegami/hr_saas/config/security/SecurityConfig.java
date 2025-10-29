@@ -1,6 +1,8 @@
 package com.shegami.hr_saas.config.security;
 
 
+import com.shegami.hr_saas.config.filters.JwtAuthFilter;
+import com.shegami.hr_saas.shared.exception.CustomAccessDeniedHandler;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,13 +20,14 @@ import java.util.regex.Pattern;
 
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
+
 @EnableWebSecurity
 @Configuration
 @AllArgsConstructor
 public class SecurityConfig {
 
-    private JwtAuthFilter jwtAuthenticationFilter;
-    private CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final JwtAuthFilter jwtAuthenticationFilter;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -47,7 +50,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                //.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .httpBasic(Customizer.withDefaults())
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/").permitAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
