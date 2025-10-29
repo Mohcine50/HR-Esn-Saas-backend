@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @Configuration
 @AllArgsConstructor
+@EnableJpaAuditing
 public class JpaConfig {
 
     private final UserRoleService userRoleService;

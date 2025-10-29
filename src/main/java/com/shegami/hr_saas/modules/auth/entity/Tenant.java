@@ -6,6 +6,9 @@ import com.shegami.hr_saas.modules.auth.enums.SubscriptionPlan;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +18,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @Table(name = "tenants")
+@EntityListeners(AuditingEntityListener.class)
 public class Tenant {
 
     @Id
@@ -31,7 +35,9 @@ public class Tenant {
     @Enumerated(EnumType.STRING)
     private TenantStatus status;
 
+    @CreatedDate
     private LocalDateTime createdAt;
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @PrePersist

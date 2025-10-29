@@ -6,6 +6,7 @@ import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
+import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,6 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final TenantService tenantService;
-
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -62,7 +62,6 @@ public class AuthServiceImpl implements AuthService {
                 .name(registerDto.getCompanyName())
                 .domain(registerDto.getCompanyDomain())
                 .build());
-
 
 
         userService.createUser(UserDto.builder()
