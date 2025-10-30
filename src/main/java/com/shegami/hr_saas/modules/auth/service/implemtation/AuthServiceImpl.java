@@ -3,6 +3,7 @@ package com.shegami.hr_saas.modules.auth.service.implemtation;
 import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
+import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
@@ -16,7 +17,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -26,6 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -85,31 +92,44 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userService.findUserByEmail(email).orElseThrow(() -> new UserNotFoundException("User NOT FOUND WITH email: " + email));
 
-        log.info("User found with email: " + user.getEmail());
-
 
         user.setLastLoginAt(LocalDateTime.now());
         userService.updateUser(user);
 
 
+        List<String> roles = user.getRoles()
+                .stream()
+                .map(UserRole::getName)
+                .toList();
+
+
+        Collection<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
+                .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
+                .toList());
+
         Instant instant = Instant.now();
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password));
+        UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                user.getEmail(), user.getPassword(), authorities
+        );
 
-        String scope = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.joining(" "));
+
 
         JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
-                .subject(authentication.getName())
+                .subject(userDetails.getUsername())
                 .issuedAt(instant)
                 .expiresAt(instant.plus(60, ChronoUnit.MINUTES))
                 .issuer("auth-service")
-                .claim("scope", scope)
+                .claim("roles", roles)
                 .build();
 
 
+        Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSet));
 
-        return jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSet)).getTokenValue();
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password, authorities));
 
+
+        return jwt.getTokenValue();
     }
 }
