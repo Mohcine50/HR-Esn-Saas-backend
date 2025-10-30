@@ -1,6 +1,7 @@
 package com.shegami.hr_saas.shared.exception;
 
 import com.shegami.hr_saas.modules.auth.exception.TenantNotFoundException;
+import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.exception.UserRoleNotFoundException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -40,6 +41,14 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(value = UserNotFoundException.class)
     public ResponseEntity<Object> handleUserNotFoundException(UserNotFoundException notFoundException) {
+
+        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = UserAlreadyExistException.class)
+    public ResponseEntity<Object> handleUserAlreadyExist(UserAlreadyExistException notFoundException) {
 
         ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
 

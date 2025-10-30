@@ -19,7 +19,7 @@ public class CustomUserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
-        com.shegami.hr_saas.modules.auth.entity.User userResponse = userRepository.findUserByEmail(email).orElseThrow(()-> new UsernameNotFoundException(email));
+        com.shegami.hr_saas.modules.auth.entity.User userResponse = userRepository.findByEmail(email).orElseThrow(()-> new UsernameNotFoundException(email));
 
         return User
                 .withUsername(userResponse.getEmail())

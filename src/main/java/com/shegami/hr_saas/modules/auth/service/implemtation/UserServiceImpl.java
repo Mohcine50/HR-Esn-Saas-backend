@@ -38,13 +38,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<User> findUserByEmail(String email) {
 
-        return userRepository.findUserByEmail(email);
+        return userRepository.findByEmail(email);
     }
 
     @Override
     public boolean createUser(UserDto userDto, Tenant tenant) {
 
-        userRepository.findUserByEmail(userDto.getEmail()).ifPresent(u -> {
+        userRepository.findByEmail(userDto.getEmail()).ifPresent(u -> {
             throw new UserAlreadyExistException("User already exists, please try another email.");
         });
 
@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
         newUser.setTenant(tenant);
         newUser.setPhoneNumber(userDto.getPhoneNumber());
         newUser.setStatus(UserStatus.ACTIVE);
-        newUser.setRoles(List.of(userRole));
+        newUser.setRoles(new ArrayList<>(List.of(userRole)));
 
         var createdUser = userRepository.save(newUser);
 
@@ -70,7 +70,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUser(User appUser) {
-    userRepository.save(appUser);
+        userRepository.save(appUser);
     }
 
 

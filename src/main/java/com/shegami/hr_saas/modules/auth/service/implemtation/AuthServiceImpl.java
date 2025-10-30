@@ -4,6 +4,8 @@ import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
+import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
+import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 
@@ -41,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponseDto login(LoginDto loginDto) {
 
-        userService.findUserByEmail(loginDto.getEmail());
+
 
         String jwtAccessToken = AuthUser(loginDto.getEmail(), loginDto.getPassword());
 
@@ -80,6 +83,15 @@ public class AuthServiceImpl implements AuthService {
     private String AuthUser(String email, String password) {
 
 
+        User user = userService.findUserByEmail(email).orElseThrow(() -> new UserNotFoundException("User NOT FOUND WITH email: " + email));
+
+        log.info("User found with email: " + user.getEmail());
+
+
+        user.setLastLoginAt(LocalDateTime.now());
+        userService.updateUser(user);
+
+
         Instant instant = Instant.now();
 
         Authentication authentication = authenticationManager.authenticate(
@@ -94,6 +106,8 @@ public class AuthServiceImpl implements AuthService {
                 .issuer("auth-service")
                 .claim("scope", scope)
                 .build();
+
+
 
         return jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSet)).getTokenValue();
 
