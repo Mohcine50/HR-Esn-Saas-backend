@@ -1,12 +1,18 @@
 package com.shegami.hr_saas.config.filters;
 
 import com.nimbusds.jose.shaded.gson.JsonObject;
+import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,6 +23,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import static com.shegami.hr_saas.shared.util.RequestHandler.resolveToken;
 import static com.shegami.hr_saas.shared.util.RequestHandler.writeResponse;
@@ -29,15 +38,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtDecoder jwtDecoder;
     private final UserDetailsService userDetailsService;
+    private final AuthenticationManager authenticationManager;
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException
     {
-
-
-
 
         String jwtToken;
         boolean tokenExpired;
@@ -88,6 +96,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 writeResponse(response, HttpServletResponse.SC_FORBIDDEN, jsonObject);
                 return;
             }
+
+            List<String> roles = jwt.getClaim("roles");
+
+            Collection<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
+                    .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
+                    .toList());
+
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(userDetails.getUsername(), userDetails.getPassword(), authorities));
 
 
             filterChain.doFilter(request, response);
