@@ -5,8 +5,10 @@ import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -15,6 +17,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
+@Slf4j
 public class AuthController {
 
     public final AuthService authService;
@@ -24,6 +27,18 @@ public class AuthController {
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto) {
         LoginResponseDto loginResponseDto = authService.login(loginDto);
         return new ResponseEntity<>(loginResponseDto, HttpStatus.OK);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> me(Authentication authentication) {
+
+        log.info("me");
+
+        String email = authentication.getName();
+
+        UserDto userInfo = authService.getCurrentUserInfo(email);
+
+        return ResponseEntity.ok(userInfo);
     }
 
     @PostMapping("signup")

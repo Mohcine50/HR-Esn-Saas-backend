@@ -1,5 +1,6 @@
 package com.shegami.hr_saas.modules.auth.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
@@ -24,6 +25,8 @@ public class User extends BaseTenantEntity {
 
     private String email;
     private String password;
+
+    @JsonIgnore
     private String phoneNumber;
 
     @ManyToMany(fetch = FetchType.EAGER)

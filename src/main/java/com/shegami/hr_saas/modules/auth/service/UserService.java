@@ -12,7 +12,6 @@ public interface UserService {
 
     Optional<User> findUserByEmail(String email);
     boolean createUser(UserDto userDto, Tenant tenant);
-
     void updateUser(User appUser);
 
 }

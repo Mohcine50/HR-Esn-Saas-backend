@@ -6,6 +6,7 @@ import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
+import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
@@ -47,6 +48,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final TenantService tenantService;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+
 
     @Override
     public LoginResponseDto login(LoginDto loginDto) {
@@ -131,5 +134,12 @@ public class AuthServiceImpl implements AuthService {
 
 
         return jwt.getTokenValue();
+    }
+
+
+    @Override
+    public UserDto getCurrentUserInfo(String email) {
+        User user = userService.findUserByEmail(email).orElseThrow(() -> new UserNotFoundException(email));
+        return userMapper.toDto(user);
     }
 }
