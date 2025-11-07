@@ -13,11 +13,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -56,7 +58,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         requestedURI = request.getRequestURI();
         String validationRegexForRedirectionUri = "^/[A-Za-z0-9]{8}$";
 
-        if (requestedURI.contains("/api/auth/") || requestedURI.contains("/v3/api-docs") || requestedURI.contains("/swagger-ui/") || requestedURI.contains("api/user/")
+        if (requestedURI.contains("/api/auth/login") || requestedURI.contains("/api/auth/signup") || requestedURI.contains("/v3/api-docs") || requestedURI.contains("/swagger-ui/")
                 || (requestedURI.matches(validationRegexForRedirectionUri) && request.getMethod().equals("GET"))) {
 
             filterChain.doFilter(request, response);
@@ -103,9 +105,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
                     .toList());
 
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(userDetails.getUsername(), userDetails.getPassword(), authorities));
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails.getUsername(),
+                    null,
+                    authorities
+            );
 
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
             filterChain.doFilter(request, response);
 

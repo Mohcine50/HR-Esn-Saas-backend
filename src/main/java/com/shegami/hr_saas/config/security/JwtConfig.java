@@ -55,9 +55,8 @@ public class JwtConfig {
     @Bean
     public AuthenticationManager authenticationManager(UserDetailsService userDetailsService) {
 
-        var daoAuthenticationProvider = new DaoAuthenticationProvider();
+        var daoAuthenticationProvider = new DaoAuthenticationProvider(userDetailsService);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
 
         return new ProviderManager(daoAuthenticationProvider);
     }
