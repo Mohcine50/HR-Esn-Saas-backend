@@ -18,14 +18,14 @@ public class JpaConfig {
 
     private final UserRoleService userRoleService;
 
-    //@Bean
+    @Bean
     public CommandLineRunner commandLineRunner() {
         return args -> {
-
-            userRoleService.addUserRole(new UserRole(null, UserRoles.ADMIN.toString()));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.MANAGER.toString()));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.FINANCIAL.toString()));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.CONSULTANT.toString()));
+            userRoleService.addUserRole(new UserRole(null, UserRoles.COMPANY_OWNER.toString()));
+            //userRoleService.addUserRole(new UserRole(null, UserRoles.ADMIN.toString()));
+            //userRoleService.addUserRole(new UserRole(null, UserRoles.MANAGER.toString()));
+            //userRoleService.addUserRole(new UserRole(null, UserRoles.FINANCIAL.toString()));
+            //userRoleService.addUserRole(new UserRole(null, UserRoles.CONSULTANT.toString()));
 
         };
     }
