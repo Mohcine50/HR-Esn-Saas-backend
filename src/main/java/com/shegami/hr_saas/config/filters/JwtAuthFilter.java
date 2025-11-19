@@ -4,6 +4,7 @@ import com.nimbusds.jose.shaded.gson.JsonObject;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -25,9 +26,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static com.shegami.hr_saas.shared.util.RequestHandler.resolveToken;
 import static com.shegami.hr_saas.shared.util.RequestHandler.writeResponse;
@@ -64,6 +63,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+
 
         jwtToken = resolveToken(request);
 

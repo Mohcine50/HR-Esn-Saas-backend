@@ -1,23 +1,30 @@
 package com.shegami.hr_saas.shared.util;
 
 import com.nimbusds.jose.shaded.gson.JsonObject;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
 
 public class RequestHandler {
 
     public static String resolveToken(HttpServletRequest request) {
 
-        String token = request.getHeader("Authorization");
+        Cookie[] cookies = request.getCookies();
 
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-            return token;
+        if (cookies == null) {
+            return null;
         }
-        return null;
+
+        return Arrays.stream(cookies)
+                .filter(cookie -> "access_token".equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
 

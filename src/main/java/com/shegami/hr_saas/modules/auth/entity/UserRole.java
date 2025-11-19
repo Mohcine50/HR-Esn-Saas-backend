@@ -20,6 +20,7 @@ public class UserRole {
     @Id
     private String roleId;
 
+    @Column(nullable = false, unique = true)
     private String name;
 
 

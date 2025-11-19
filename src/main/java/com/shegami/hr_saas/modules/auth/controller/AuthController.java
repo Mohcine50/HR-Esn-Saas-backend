@@ -3,6 +3,8 @@ package com.shegami.hr_saas.modules.auth.controller;
 
 import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,8 +26,15 @@ public class AuthController {
 
 
     @PostMapping("login")
-    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto,HttpServletResponse response) {
         LoginResponseDto loginResponseDto = authService.login(loginDto);
+        Cookie cookie = new Cookie("access_token", loginResponseDto.accessToken());
+        cookie.setDomain("localhost"); // or your specific domain
+        cookie.setPath("/");
+        cookie.setSecure(true); // Only send over HTTPS
+        cookie.setHttpOnly(true); // Prevent client-side script access
+        cookie.setMaxAge(3600); // Expires in 1 hour (3600 seconds)
+        response.addCookie(cookie);
         return new ResponseEntity<>(loginResponseDto, HttpStatus.OK);
     }
 
@@ -42,9 +51,16 @@ public class AuthController {
     }
 
     @PostMapping("signup")
-    public ResponseEntity<RegisterResponseDto> register(@RequestBody RegisterDto registerDto){
+    public ResponseEntity<RegisterResponseDto> register(@RequestBody RegisterDto registerDto, HttpServletResponse response){
 
         RegisterResponseDto register = authService.register(registerDto);
+        Cookie cookie = new Cookie("token", register.getToken());
+        cookie.setDomain("localhost"); // or your specific domain
+        cookie.setPath("/");
+        cookie.setSecure(true); // Only send over HTTPS
+        cookie.setHttpOnly(true); // Prevent client-side script access
+        cookie.setMaxAge(3600); // Expires in 1 hour (3600 seconds)
+        response.addCookie(cookie);
 
         return new ResponseEntity<>(register, HttpStatus.OK);
     }
