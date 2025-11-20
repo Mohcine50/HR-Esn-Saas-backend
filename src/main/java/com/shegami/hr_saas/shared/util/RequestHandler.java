@@ -21,7 +21,7 @@ public class RequestHandler {
         }
 
         return Arrays.stream(cookies)
-                .filter(cookie -> "access_token".equals(cookie.getName()))
+                .filter(cookie -> cookie.getName().equals("access_token"))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
