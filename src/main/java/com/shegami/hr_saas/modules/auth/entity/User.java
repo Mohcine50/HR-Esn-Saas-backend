@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,14 +37,12 @@ public class User extends BaseTenantEntity {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private List<UserRole> roles;
+    private List<UserRole> roles = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private UserStatus status;
 
-
     private LocalDateTime lastLoginAt;
-
 
     @Id
     @Column(name = "user_id", nullable = false)

@@ -6,15 +6,14 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {UserRoleMapper.class})
 public interface UserMapper {
 
 
     // Convert Entity → DTO
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "roles", source="roles")
     UserDto toDto(User user);
 
-    // Convert DTO → Entity
-    @Mapping(target = "password", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     User toEntity(UserDto userDto);
 }
