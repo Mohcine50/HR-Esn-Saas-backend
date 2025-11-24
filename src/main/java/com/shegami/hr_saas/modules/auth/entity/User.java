@@ -44,6 +44,9 @@ public class User extends BaseTenantEntity {
 
     private LocalDateTime lastLoginAt;
 
+    private Boolean isVerified = false;
+    private LocalDateTime verifiedAt;
+
     @Id
     @Column(name = "user_id", nullable = false)
     private String userId;
