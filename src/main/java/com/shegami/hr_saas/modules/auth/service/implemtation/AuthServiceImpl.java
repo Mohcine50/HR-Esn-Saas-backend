@@ -124,6 +124,7 @@ public class AuthServiceImpl implements AuthService {
                 .expiresAt(instant.plus(60, ChronoUnit.MINUTES))
                 .issuer("auth-service")
                 .claim("roles", roles)
+                .claim("X-Tenant-ID", user.getTenant().getTenantId())
                 .build();
 
 

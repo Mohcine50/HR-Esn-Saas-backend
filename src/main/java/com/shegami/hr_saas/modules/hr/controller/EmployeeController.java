@@ -7,10 +7,7 @@ import com.shegami.hr_saas.modules.hr.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,6 +18,14 @@ public class EmployeeController {
 
 
     private final EmployeeService employeeService;
+
+
+
+    @GetMapping("all")
+    public ResponseEntity<Object> listEmployees() {
+
+        return null;
+    }
 
     @PostMapping("invite")
     public ResponseEntity<Object> inviteEmployee(@RequestBody InviteEmployeeDto inviteDto){

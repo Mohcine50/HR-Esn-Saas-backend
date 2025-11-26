@@ -1,10 +1,9 @@
 package com.shegami.hr_saas.config.filters;
 
 import com.nimbusds.jose.shaded.gson.JsonObject;
-import com.shegami.hr_saas.modules.auth.entity.UserRole;
+import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -20,7 +19,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -100,6 +98,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             List<String> roles = jwt.getClaim("roles");
+            String tenantId = jwt.getClaim("X-Tenant-ID");
 
             Collection<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
                     .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
@@ -110,6 +109,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     null,
                     authorities
             );
+
+            TenantContextHolder.setCurrentTenant(tenantId);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
