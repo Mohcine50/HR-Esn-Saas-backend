@@ -4,6 +4,8 @@ import com.shegami.hr_saas.modules.auth.exception.TenantNotFoundException;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.exception.UserRoleNotFoundException;
+import com.shegami.hr_saas.modules.hr.exception.EmployeeAlreadyExistException;
+import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,6 +67,24 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(value = UserRoleNotFoundException.class)
     public ResponseEntity<Object> handleUserRoleNotFoundException(UserRoleNotFoundException notFoundException) {
+
+        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+
+
+    @ExceptionHandler(value = EmployeeNotFoundException.class)
+    public ResponseEntity<Object> handleEmployeeNotFoundException(EmployeeNotFoundException notFoundException) {
+
+        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = EmployeeAlreadyExistException.class)
+    public ResponseEntity<Object> handleEmployeeAlreadyExist(EmployeeAlreadyExistException notFoundException) {
 
         ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
 
