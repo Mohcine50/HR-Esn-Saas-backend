@@ -2,9 +2,7 @@ package com.shegami.hr_saas.modules.auth.mapper;
 
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.dto.UserDto;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {UserRoleMapper.class})
 public interface UserMapper {
@@ -12,8 +10,11 @@ public interface UserMapper {
 
     // Convert Entity → DTO
     @Mapping(target = "password", ignore = true)
-    @Mapping(target = "roles", source="roles")
+    @Mapping(target = "roles", source = "roles")
     UserDto toDto(User user);
 
     User toEntity(UserDto userDto);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    User partialUpdate(UserDto userDto, @MappingTarget User user);
 }

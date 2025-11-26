@@ -60,10 +60,6 @@ public class AuthController {
         return null;
     }
 
-    @PostMapping("invite")
-    public ResponseEntity<Object> invite(InviteDto inviteDto){
-        return null;
-    }
 
     @PostMapping("accept-invite")
     public ResponseEntity<Object> acceptInvite(InviteDto inviteDto){
