@@ -37,7 +37,9 @@ public class Employee {
 
     private String skills;
 
+    private String bio;
 
+    private String imageUrl;
 
     @Id
     @Column(name = "employee_id", nullable = false)

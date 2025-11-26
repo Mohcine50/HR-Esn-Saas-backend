@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.auth.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
+import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -46,6 +47,9 @@ public class User extends BaseTenantEntity {
 
     private Boolean isVerified = false;
     private LocalDateTime verifiedAt;
+
+    @OneToOne(fetch = FetchType.EAGER, mappedBy = "user")
+    private Employee employee;
 
     @Id
     @Column(name = "user_id", nullable = false)
