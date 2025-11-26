@@ -1,23 +1,20 @@
-package com.shegami.hr_saas.modules.hr.service;
+package com.shegami.hr_saas.modules.hr.service.implementations;
 
-import com.shegami.hr_saas.modules.auth.dto.TenantDto;
+import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
-import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
-import com.shegami.hr_saas.modules.auth.repository.UserRoleRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
 import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
-import com.shegami.hr_saas.modules.hr.mapper.EmployeeMapper;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
+import com.shegami.hr_saas.modules.hr.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +66,10 @@ public class EmployeeServiceImpl implements EmployeeService {
     public String AddNewEmployee(InviteEmployeeDto employee) {
 
         // Get Tenant from db
-        Tenant tenant = tenantService.getTenant(employee.getTenantId());
+        String tenantId = TenantContextHolder.getCurrentTenant();
+        Tenant tenant = tenantService.getTenant(tenantId);
+
+
         // Get role from db
         UserRole userRole = userRoleService.getUserRoleByName(employee.getRoleName());
 

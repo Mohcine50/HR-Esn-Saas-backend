@@ -14,8 +14,6 @@ import java.io.Serializable;
 @Value
 public class InviteEmployeeDto implements Serializable {
 
-
-    String tenantId;
     @NotNull
     @NotEmpty
     @NotBlank
