@@ -29,6 +29,8 @@ public class Tenant {
 
     private String domain;
 
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     private SubscriptionPlan plan;
 
