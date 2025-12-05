@@ -9,12 +9,16 @@ import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
 import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
+import com.shegami.hr_saas.modules.hr.mapper.EmployeeMapper;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
 import com.shegami.hr_saas.modules.hr.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +37,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final UserRoleService userRoleService;
     private final TenantService tenantService;
     private final PasswordEncoder passwordEncoder;
+    private final EmployeeMapper employeeMapper;
 
 
     @Override
@@ -99,6 +104,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         newEmployee.setContractType(employee.getContractType());
         newEmployee.setStatus(EmployeeStatus.ACTIVE); // Adjust based on your enum values
         newEmployee.setHireDate(LocalDateTime.now());
+        newEmployee.setTenant(tenant);
 
         // Save employee
         Employee savedEmployee = employeeRepository.save(newEmployee);
@@ -107,5 +113,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         // sendInvitationEmail(savedUser);
 
         return password;
+    }
+
+    @Override
+    public Page<EmployeeDto> getAllEmployees(Pageable pageable) {
+        String tenantId = TenantContextHolder.getCurrentTenant();
+        return employeeRepository.findByTenantId(pageable,tenantId).map(employeeMapper::toDto);
     }
 }

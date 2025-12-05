@@ -4,6 +4,7 @@ package com.shegami.hr_saas.modules.hr.entity;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.hr.enums.ContractType;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
+import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Table(name = "employees")
-public class Employee {
+public class Employee extends BaseTenantEntity {
 
 
     @OneToOne(fetch = FetchType.EAGER)
