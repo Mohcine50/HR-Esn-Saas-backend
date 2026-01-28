@@ -2,6 +2,9 @@ package com.shegami.hr_saas.config.filters;
 
 import com.nimbusds.jose.shaded.gson.JsonObject;
 import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.modules.auth.entity.User;
+import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
+import com.shegami.hr_saas.modules.auth.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +41,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtDecoder jwtDecoder;
     private final UserDetailsService userDetailsService;
     private final AuthenticationManager authenticationManager;
+    private final UserService userService;
 
 
     @Override
@@ -74,10 +78,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             Jwt jwt = jwtDecoder.decode(jwtToken);
+            var userId = jwt.getSubject();
+            User user = userService.findUserByUserId(userId)
+                    .orElse(null);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(jwt.getSubject());
-
-            if (userDetails == null) {
+            if (user == null) {
                 jsonObject.addProperty("Message", "NO USER WITH THIS USERNAME");
                 writeResponse(response, HttpServletResponse.SC_UNAUTHORIZED, jsonObject);
                 return;
@@ -105,7 +110,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .toList());
 
             Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails.getUsername(),
+                    user.getEmail(),
                     null,
                     authorities
             );

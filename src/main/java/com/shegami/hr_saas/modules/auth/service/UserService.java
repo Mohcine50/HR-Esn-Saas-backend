@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface UserService {
 
     Optional<User> findUserByEmail(String email);
+    Optional<User> findUserByUserId(String userId);
     boolean createUser(UserDto userDto, Tenant tenant);
     void updateUser(User appUser);
 

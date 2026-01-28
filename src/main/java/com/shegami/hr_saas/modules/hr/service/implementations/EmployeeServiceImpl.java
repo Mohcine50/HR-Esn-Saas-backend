@@ -102,7 +102,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         newEmployee.setSalary(employee.getSalary());
         newEmployee.setCurrency(employee.getCurrency());
         newEmployee.setContractType(employee.getContractType());
-        newEmployee.setStatus(EmployeeStatus.ACTIVE); // Adjust based on your enum values
+        newEmployee.setStatus(EmployeeStatus.ACTIVE);
         newEmployee.setHireDate(LocalDateTime.now());
         newEmployee.setTenant(tenant);
 

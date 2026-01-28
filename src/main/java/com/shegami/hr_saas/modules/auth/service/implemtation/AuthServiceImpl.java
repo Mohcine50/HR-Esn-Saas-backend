@@ -119,7 +119,7 @@ public class AuthServiceImpl implements AuthService {
 
 
         JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
-                .subject(userDetails.getUsername())
+                .subject(user.getUserId())
                 .issuedAt(instant)
                 .expiresAt(instant.plus(60, ChronoUnit.MINUTES))
                 .issuer("auth-service")

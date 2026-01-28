@@ -42,6 +42,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Optional<User> findUserByUserId(String userId) {
+        return userRepository.findUsersByUserId(userId);
+    }
+
+    @Override
     public boolean createUser(UserDto userDto, Tenant tenant) {
 
         userRepository.findByEmail(userDto.getEmail()).ifPresent(u -> {

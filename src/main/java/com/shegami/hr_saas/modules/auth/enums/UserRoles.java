@@ -4,6 +4,6 @@ public enum UserRoles {
     COMPANY_OWNER,
     ADMIN,
     MANAGER,
-    CONSULTANT,
+    EMPLOYEE,
     FINANCIAL,
 }
