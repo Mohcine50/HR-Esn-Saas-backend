@@ -1,6 +1,8 @@
 package com.shegami.hr_saas.modules.hr.service.implementations;
 
 import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.modules.auth.entity.Tenant;
+import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.hr.dto.ClientDto;
 import com.shegami.hr_saas.modules.hr.entity.Client;
 import com.shegami.hr_saas.modules.hr.entity.ClientMapper;
@@ -23,6 +25,8 @@ public class ClientServiceImpl implements ClientService {
 
     private final ClientRepository clientRepository;
     private final ClientMapper clientMapper;
+    private final TenantService tenantService;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -71,11 +75,18 @@ public class ClientServiceImpl implements ClientService {
     @Transactional
     public ClientDto addNewClient(ClientDto clientDto) {
         log.info("Adding new client: {}", clientDto.getFullName());
+
         if (clientRepository.findByEmail(clientDto.getEmail()).isPresent()) {
             throw new AlreadyExistsException("Client with this email already exists");
         }
 
+
+        // Get Tenant from db
+        String tenantId = TenantContextHolder.getCurrentTenant();
+        Tenant tenant = tenantService.getTenant(tenantId);
+
         Client client = clientMapper.toEntity(clientDto);
+        client.setTenant(tenant);
 
         Client savedClient = clientRepository.save(client);
 
