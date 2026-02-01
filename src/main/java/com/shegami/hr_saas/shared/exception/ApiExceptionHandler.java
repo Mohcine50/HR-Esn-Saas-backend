@@ -40,11 +40,27 @@ public class ApiExceptionHandler {
 
     }
 
+    @ExceptionHandler(value = ResourceNotFoundException.class)
+    public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException resourceNotFoundException) {
+
+        ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
 
     @ExceptionHandler(value = UserNotFoundException.class)
     public ResponseEntity<Object> handleUserNotFoundException(UserNotFoundException notFoundException) {
 
         ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = AlreadyExistsException.class)
+    public ResponseEntity<Object> handleResourceAlreadyExist(AlreadyExistsException alreadyExistsException) {
+
+        ApiException apiException = new ApiException(alreadyExistsException.getMessage(), HttpStatus.NOT_FOUND, new Date());
 
         return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
     }
