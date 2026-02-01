@@ -1,14 +1,17 @@
 package com.shegami.hr_saas.modules.hr.service;
 
 import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
+import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
 import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface EmployeeService {
 
-    Employee getEmployeeById(String id);
+    EmployeeDto getEmployeeById(String id);
     Employee getEmployeeByEmail(String Email);
 
     Employee saveEmployee(Employee employee);
@@ -17,4 +20,7 @@ public interface EmployeeService {
 
     String AddNewEmployee(InviteEmployeeDto employee);
     Page<EmployeeDto> getAllEmployees(Pageable pageable);
+
+
+    List<EmployeesCountByContract> countEmployeesByContract();
 }

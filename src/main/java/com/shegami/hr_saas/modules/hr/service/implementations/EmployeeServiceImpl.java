@@ -10,13 +10,17 @@ import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
 import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
+import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
 import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
+import com.shegami.hr_saas.modules.hr.exception.EmployeeAlreadyExistException;
+import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
 import com.shegami.hr_saas.modules.hr.mapper.EmployeeMapper;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
 import com.shegami.hr_saas.modules.hr.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,9 +28,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.shegami.hr_saas.modules.hr.utils.PasswordGenerator.generatePassword;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmployeeServiceImpl implements EmployeeService {
@@ -41,8 +47,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 
     @Override
-    public Employee getEmployeeById(String id) {
-        return null;
+    public EmployeeDto getEmployeeById(String id) {
+        Employee employee = employeeRepository.findById(id).orElseThrow(()->new EmployeeNotFoundException("Employee Not Found With Id : " + id));
+        return employeeMapper.toDto(employee);
     }
 
     @Override
@@ -74,7 +81,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         String tenantId = TenantContextHolder.getCurrentTenant();
         Tenant tenant = tenantService.getTenant(tenantId);
 
-
+        //TODO: needs to make it case insensitive
         // Get role from db
         UserRole userRole = userRoleService.getUserRoleByName(employee.getRoleName());
 
@@ -119,5 +126,11 @@ public class EmployeeServiceImpl implements EmployeeService {
     public Page<EmployeeDto> getAllEmployees(Pageable pageable) {
         String tenantId = TenantContextHolder.getCurrentTenant();
         return employeeRepository.findByTenantId(pageable,tenantId).map(employeeMapper::toDto);
+    }
+
+    @Override
+    public List<EmployeesCountByContract> countEmployeesByContract() {
+        String tenantId = TenantContextHolder.getCurrentTenant();
+        return employeeRepository.countEmployeeByContractType(tenantId);
     }
 }
