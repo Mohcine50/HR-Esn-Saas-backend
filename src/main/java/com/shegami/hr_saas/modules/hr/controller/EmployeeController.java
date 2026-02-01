@@ -48,7 +48,6 @@ public class EmployeeController {
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
-    // 4. GET /api/employees/stats/contract-type (Clean Sub-resource)
     @GetMapping("/stats/count-by-contract")
     public ResponseEntity<List<EmployeesCountByContract>> getCountByContract() {
         return ResponseEntity.ok(employeeService.countEmployeesByContract());
