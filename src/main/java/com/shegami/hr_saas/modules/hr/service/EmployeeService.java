@@ -18,7 +18,7 @@ public interface EmployeeService {
     Employee updateEmployee(Employee employee);
     void deleteEmployee(String id);
 
-    String AddNewEmployee(InviteEmployeeDto employee);
+    EmployeeDto AddNewEmployee(InviteEmployeeDto employee);
     Page<EmployeeDto> getAllEmployees(Pageable pageable);
 
 

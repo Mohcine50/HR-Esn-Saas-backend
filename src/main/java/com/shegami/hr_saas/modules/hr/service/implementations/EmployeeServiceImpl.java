@@ -75,7 +75,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
-    public String AddNewEmployee(InviteEmployeeDto employee) {
+    public EmployeeDto AddNewEmployee(InviteEmployeeDto employee) {
 
         // Get Tenant from db
         String tenantId = TenantContextHolder.getCurrentTenant();
@@ -119,7 +119,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         // Optional: Send invitation email
         // sendInvitationEmail(savedUser);
 
-        return password;
+        return employeeMapper.toDto(savedEmployee);
     }
 
     @Override

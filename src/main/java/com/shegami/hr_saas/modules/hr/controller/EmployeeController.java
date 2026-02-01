@@ -7,11 +7,13 @@ import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
 import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.service.EmployeeService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,35 +27,30 @@ public class EmployeeController {
 
     private final EmployeeService employeeService;
 
-    @GetMapping("all")
-    public ResponseEntity<Page<EmployeeDto>> listEmployees(
-            @PageableDefault(size = 10, page = 0) Pageable pageable
+    @GetMapping
+    public ResponseEntity<Page<EmployeeDto>> getAll(
+            @PageableDefault(size = 10) Pageable pageable
     ) {
-        Page<EmployeeDto> page = employeeService.getAllEmployees(pageable);
-        return ResponseEntity.ok(page);
+        return ResponseEntity.ok(employeeService.getAllEmployees(pageable));
     }
 
 
-    @GetMapping()
-    public ResponseEntity<EmployeeDto> getEmployee(
-            @RequestParam("employee_id") String employeeId
-    ) {
-        EmployeeDto employee = employeeService.getEmployeeById(employeeId);
-        return ResponseEntity.ok(employee);
-    }
-
-    @PostMapping("invite")
-    public ResponseEntity<Object> inviteEmployee(@RequestBody InviteEmployeeDto inviteDto){
-        String generatedPassword = employeeService.AddNewEmployee(inviteDto);
-        return ResponseEntity.ok(generatedPassword);
+    @GetMapping("/{id}")
+    public ResponseEntity<EmployeeDto> getById(@PathVariable("id") String id) {
+        return ResponseEntity.ok(employeeService.getEmployeeById(id));
     }
 
 
-    @GetMapping("/employees-count-by-contract")
-    public ResponseEntity<List<EmployeesCountByContract>> countEmployeeByContract(){
-        List<EmployeesCountByContract> res =employeeService.countEmployeesByContract();
-        return ResponseEntity.ok(res);
+    @PostMapping("/invite")
+    public ResponseEntity<EmployeeDto> invite(@Valid @RequestBody InviteEmployeeDto inviteDto) {
+        // Return the created object, not the password
+        EmployeeDto created = employeeService.AddNewEmployee(inviteDto);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
-
+    // 4. GET /api/employees/stats/contract-type (Clean Sub-resource)
+    @GetMapping("/stats/count-by-contract")
+    public ResponseEntity<List<EmployeesCountByContract>> getCountByContract() {
+        return ResponseEntity.ok(employeeService.countEmployeesByContract());
+    }
 }
