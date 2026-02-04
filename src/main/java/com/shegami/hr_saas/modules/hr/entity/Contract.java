@@ -3,9 +3,9 @@ package com.shegami.hr_saas.modules.hr.entity;
 
 import com.shegami.hr_saas.modules.hr.enums.ContractStatus;
 import com.shegami.hr_saas.modules.hr.enums.RateUnit;
+import com.shegami.hr_saas.modules.mission.entity.Client;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -35,6 +35,8 @@ public class Contract {
 
     @Enumerated(EnumType.STRING)
     private ContractStatus status;
+
+    private LocalDateTime hireDate;
 
 
     @Id

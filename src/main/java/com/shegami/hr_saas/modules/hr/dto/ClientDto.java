@@ -1,13 +1,13 @@
 package com.shegami.hr_saas.modules.hr.dto;
 
-import com.shegami.hr_saas.modules.auth.dto.TenantDto;
+import com.shegami.hr_saas.modules.mission.entity.Client;
 import lombok.Value;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * DTO for {@link com.shegami.hr_saas.modules.hr.entity.Client}
+ * DTO for {@link Client}
  */
 @Value
 public class ClientDto implements Serializable {

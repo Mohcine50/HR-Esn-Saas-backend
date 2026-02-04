@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.mission.entity;
 
-import com.shegami.hr_saas.modules.hr.entity.Client;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;

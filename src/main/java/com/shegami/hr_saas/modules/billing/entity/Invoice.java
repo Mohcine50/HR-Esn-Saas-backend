@@ -1,7 +1,7 @@
 package com.shegami.hr_saas.modules.billing.entity;
 
 import com.shegami.hr_saas.modules.billing.enums.InvoiceStatus;
-import com.shegami.hr_saas.modules.hr.entity.Client;
+import com.shegami.hr_saas.modules.mission.entity.Client;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Setter;

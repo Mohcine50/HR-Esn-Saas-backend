@@ -1,4 +1,4 @@
-package com.shegami.hr_saas.modules.hr.entity;
+package com.shegami.hr_saas.modules.mission.entity;
 
 
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
