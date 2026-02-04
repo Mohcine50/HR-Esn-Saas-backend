@@ -1,19 +1,31 @@
 package com.shegami.hr_saas.modules.mission.service.implementations;
 
 import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.modules.auth.entity.Tenant;
+import com.shegami.hr_saas.modules.auth.entity.User;
+import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
+import com.shegami.hr_saas.modules.auth.repository.UserRepository;
+import com.shegami.hr_saas.modules.auth.service.TenantService;
+import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.mission.dto.ClientDto;
 import com.shegami.hr_saas.modules.mission.dto.MissionDto;
+import com.shegami.hr_saas.modules.mission.entity.Client;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
+import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
 import com.shegami.hr_saas.modules.mission.mapper.MissionMapper;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
+import com.shegami.hr_saas.modules.mission.service.ClientService;
 import com.shegami.hr_saas.modules.mission.service.MissionService;
 import com.shegami.hr_saas.shared.exception.AlreadyExistsException;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +39,10 @@ public class MissionServiceImpl implements MissionService {
     private final MissionRepository missionRepository;
     private final MissionMapper missionMapper;
     private final ConsultantRepository consultantRepository;
+    private final TenantService tenantService;
+    private final UserRepository userRepository;
+    private final ClientService clientService;
+    private final ClientMapper clientMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -81,16 +97,22 @@ public class MissionServiceImpl implements MissionService {
     @Override
     @Transactional
     public MissionDto createMission(MissionDto dto) {
-        log.info("Creating mission for consultant {} at client {}", dto.getConsultant().getConsultantId(), dto.getClient().getClientId());
+        String tenantId = TenantContextHolder.getCurrentTenant();
+        log.info("Creating mission for tenant: {}", tenantId);
+        Tenant tenant = tenantService.getTenant(tenantId);
 
-        boolean isBusy = missionRepository.existsByConsultantIdAndDateRange(
-                dto.getConsultant().getConsultantId(), dto.getStartDate(), dto.getEndDate());
-        if (isBusy) {
-            throw new AlreadyExistsException("Consultant is already assigned to another mission during these dates.");
-        }
+        String userEmail = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info(userEmail);
+        User user = userRepository.findByEmail(userEmail).orElseThrow(
+                ()-> new UserNotFoundException("User not found with email: " + userEmail));
 
+        ClientDto client = clientService.getClientById(dto.getClientId());
         Mission mission = missionMapper.toEntity(dto);
-        mission.setStatus(MissionStatus.ACTIVE); // Default to active on creation
+        mission.setClient(clientMapper.toEntity(client));
+        mission.setStatus(MissionStatus.ON_HOLD);
+        mission.setTenant(tenant);
+        mission.setAccountManager(user.getEmployee());
+
 
         return missionMapper.toDto(missionRepository.save(mission));
     }

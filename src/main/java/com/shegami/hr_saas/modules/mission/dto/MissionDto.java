@@ -32,4 +32,5 @@ public class MissionDto implements Serializable {
     LocalDate endDate;
     MissionStatus status;
     String mission_id;
+    String clientId;
 }
