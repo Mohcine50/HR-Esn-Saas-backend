@@ -5,7 +5,7 @@ import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.hr.dto.ClientDto;
 import com.shegami.hr_saas.modules.hr.entity.Client;
-import com.shegami.hr_saas.modules.hr.entity.ClientMapper;
+import com.shegami.hr_saas.modules.hr.mapper.ClientMapper;
 import com.shegami.hr_saas.modules.hr.repository.ClientRepository;
 import com.shegami.hr_saas.modules.hr.service.ClientService;
 import com.shegami.hr_saas.shared.exception.AlreadyExistsException;

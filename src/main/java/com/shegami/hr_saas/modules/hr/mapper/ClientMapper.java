@@ -1,7 +1,8 @@
-package com.shegami.hr_saas.modules.hr.entity;
+package com.shegami.hr_saas.modules.hr.mapper;
 
 import com.shegami.hr_saas.modules.auth.mapper.TenantMapper;
 import com.shegami.hr_saas.modules.hr.dto.ClientDto;
+import com.shegami.hr_saas.modules.hr.entity.Client;
 import org.mapstruct.*;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = {TenantMapper.class})

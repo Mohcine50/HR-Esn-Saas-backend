@@ -36,8 +36,6 @@ public class Employee extends BaseTenantEntity {
     @Enumerated(EnumType.STRING)
     private EmployeeStatus status;
 
-    private String skills;
-
     private String bio;
 
     private String imageUrl;
