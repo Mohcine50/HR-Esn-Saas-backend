@@ -1,6 +1,6 @@
-package com.shegami.hr_saas.modules.hr.service;
+package com.shegami.hr_saas.modules.mission.service;
 
-import com.shegami.hr_saas.modules.hr.dto.ClientDto;
+import com.shegami.hr_saas.modules.mission.dto.ClientDto;
 import com.shegami.hr_saas.modules.mission.entity.Client;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

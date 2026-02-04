@@ -54,8 +54,6 @@ public class Consultant extends BaseTenantEntity {
     private Set<String> skills = new HashSet<>();
 
     private String cvS3Key;
-    private LocalDateTime cvLastUpdatedAt;
-
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -67,7 +65,7 @@ public class Consultant extends BaseTenantEntity {
     @PrePersist
     public void generateConsultantId() {
         if (this.consultantId == null) {
-            this.consultantId = "MIS-" + UUID.randomUUID();
+            this.consultantId = "CLT-" + UUID.randomUUID();
         }
     }
 

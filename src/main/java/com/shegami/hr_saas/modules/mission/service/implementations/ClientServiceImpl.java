@@ -1,13 +1,13 @@
-package com.shegami.hr_saas.modules.hr.service.implementations;
+package com.shegami.hr_saas.modules.mission.service.implementations;
 
 import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
-import com.shegami.hr_saas.modules.hr.dto.ClientDto;
+import com.shegami.hr_saas.modules.mission.dto.ClientDto;
 import com.shegami.hr_saas.modules.mission.entity.Client;
 import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
-import com.shegami.hr_saas.modules.hr.repository.ClientRepository;
-import com.shegami.hr_saas.modules.hr.service.ClientService;
+import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
+import com.shegami.hr_saas.modules.mission.service.ClientService;
 import com.shegami.hr_saas.shared.exception.AlreadyExistsException;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;

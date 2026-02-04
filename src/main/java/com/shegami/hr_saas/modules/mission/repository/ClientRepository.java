@@ -1,4 +1,4 @@
-package com.shegami.hr_saas.modules.hr.repository;
+package com.shegami.hr_saas.modules.mission.repository;
 
 import com.shegami.hr_saas.modules.mission.entity.Client;
 import org.springframework.data.domain.Page;

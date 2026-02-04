@@ -1,4 +1,4 @@
-package com.shegami.hr_saas.modules.hr.dto;
+package com.shegami.hr_saas.modules.mission.dto;
 
 import com.shegami.hr_saas.modules.mission.entity.Client;
 import lombok.Value;

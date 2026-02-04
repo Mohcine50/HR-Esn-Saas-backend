@@ -1,11 +1,7 @@
-package com.shegami.hr_saas.modules.hr.controller;
+package com.shegami.hr_saas.modules.mission.controller;
 
-
-import com.shegami.hr_saas.modules.hr.dto.ClientDto;
-import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
-import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
-import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
-import com.shegami.hr_saas.modules.hr.service.ClientService;
+import com.shegami.hr_saas.modules.mission.dto.ClientDto;
+import com.shegami.hr_saas.modules.mission.service.ClientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +12,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/clients")
 @Slf4j
-public class ClientController {
+public
+class ClientController {
 
     private final ClientService clientService;
 
@@ -46,6 +42,5 @@ public class ClientController {
         ClientDto created = clientService.addNewClient(clientDto);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
-
-
 }
+

@@ -18,7 +18,7 @@ public class JpaConfig {
 
     private final UserRoleService userRoleService;
 
-    @Bean
+    //@Bean
     public CommandLineRunner commandLineRunner() {
         return args -> {
             userRoleService.addUserRole(new UserRole(null, UserRoles.COMPANY_OWNER.toString()));
