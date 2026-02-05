@@ -6,6 +6,7 @@ import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.exception.UserRoleNotFoundException;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeAlreadyExistException;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
+import com.shegami.hr_saas.modules.upload.exceptions.StorageUploadException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +47,14 @@ public class ApiExceptionHandler {
         ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
 
         return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = StorageUploadException.class)
+    public ResponseEntity<Object> handleStorageUploadException(StorageUploadException storageUploadException) {
+
+        ApiException apiException = new ApiException(storageUploadException.getMessage(), HttpStatus.FORBIDDEN, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.FORBIDDEN);
     }
 
 
