@@ -82,8 +82,10 @@ public class UploadServiceImpl implements UploadService {
         file.setUploader(user);
         file.setTenant(tenant);
 
+        UploadFile uploadedFile = uploadFileRepository.save(file);
 
-        return new UploadResponse(file.getFileId(), uploadLink);
+
+        return new UploadResponse(uploadedFile.getFileId(), uploadLink);
     }
 
     @Transactional
@@ -120,7 +122,6 @@ public class UploadServiceImpl implements UploadService {
                 .getObjectRequest(getObjectRequest)
                 .signatureDuration(Duration.of(10, ChronoUnit.MINUTES))
                 .build();
-
         return s3Signer.presignGetObject(request).url().toString();
 
     }

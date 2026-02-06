@@ -3,6 +3,7 @@ package com.shegami.hr_saas.modules.auth.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -39,6 +40,9 @@ public class User extends BaseTenantEntity {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private List<UserRole> roles = new ArrayList<>();
+
+    @OneToOne
+    private UploadFile imageUrl;
 
     @Enumerated(EnumType.STRING)
     private UserStatus status;

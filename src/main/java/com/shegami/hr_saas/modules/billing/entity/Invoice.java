@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.billing.entity;
 
 import com.shegami.hr_saas.modules.billing.enums.InvoiceStatus;
 import com.shegami.hr_saas.modules.mission.entity.Client;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Setter;
@@ -31,6 +32,9 @@ public class Invoice extends BaseTenantEntity {
 
     @Column(precision = 12, scale = 2)
     private BigDecimal vatAmount;
+
+    @OneToOne
+    private UploadFile invoiceFile;
 
     @Column(precision = 12, scale = 2)
     private BigDecimal totalAmount;

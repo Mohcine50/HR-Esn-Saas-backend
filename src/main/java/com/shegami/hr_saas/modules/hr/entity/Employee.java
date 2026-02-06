@@ -4,6 +4,7 @@ package com.shegami.hr_saas.modules.hr.entity;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.hr.enums.ContractType;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -32,6 +33,9 @@ public class Employee extends BaseTenantEntity {
 
     @Enumerated(EnumType.STRING)
     private ContractType contractType;
+
+    @OneToOne
+    private UploadFile contractFile;
 
     @Enumerated(EnumType.STRING)
     private EmployeeStatus status;

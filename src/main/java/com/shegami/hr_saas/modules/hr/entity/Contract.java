@@ -4,6 +4,7 @@ package com.shegami.hr_saas.modules.hr.entity;
 import com.shegami.hr_saas.modules.hr.enums.ContractStatus;
 import com.shegami.hr_saas.modules.hr.enums.RateUnit;
 import com.shegami.hr_saas.modules.mission.entity.Client;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +32,9 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     private RateUnit rateUnit;
 
-    private String signedPdfUrl;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    private UploadFile signedPdfUrl;
 
     @Enumerated(EnumType.STRING)
     private ContractStatus status;

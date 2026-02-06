@@ -1,8 +1,9 @@
 package com.shegami.hr_saas.modules.auth.entity;
 
 
-import com.shegami.hr_saas.modules.auth.enums.TenantStatus;
 import com.shegami.hr_saas.modules.auth.enums.SubscriptionPlan;
+import com.shegami.hr_saas.modules.auth.enums.TenantStatus;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +12,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -29,7 +29,8 @@ public class Tenant {
 
     private String domain;
 
-    private String imageUrl;
+    @OneToOne
+    private UploadFile imageUrl;
 
     @Enumerated(EnumType.STRING)
     private SubscriptionPlan plan;
