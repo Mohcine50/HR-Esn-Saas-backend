@@ -55,6 +55,11 @@ public class User extends BaseTenantEntity {
     @OneToOne(fetch = FetchType.EAGER, mappedBy = "user")
     private Employee employee;
 
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "settings_id")
+    private UserSettings userSettings;
+
+
     @Id
     @Column(name = "user_id", nullable = false)
     private String userId;

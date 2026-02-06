@@ -6,17 +6,20 @@ import com.shegami.hr_saas.modules.auth.dto.UserDto;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
+import com.shegami.hr_saas.modules.auth.entity.UserSettings;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
+import com.shegami.hr_saas.modules.auth.repository.UserSettingsRepository;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
 import com.shegami.hr_saas.shared.exception.ApiRequestException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +35,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRoleService userRoleService;
 
+    private final UserSettingsRepository settingsRepository;
 
     private final UserMapper userMapper;
 
@@ -46,6 +50,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findUsersByUserId(userId);
     }
 
+    @Transactional
     @Override
     public boolean createUser(UserDto userDto, Tenant tenant) {
 
@@ -54,8 +59,7 @@ public class UserServiceImpl implements UserService {
         });
 
         UserRole userRole = userRoleService.getUserRoleByName(UserRoles.COMPANY_OWNER.toString());
-
-
+        UserSettings userSettings = settingsRepository.save(new UserSettings());
 
         User newUser = new User();
         newUser.setEmail(userDto.getEmail());
@@ -65,6 +69,7 @@ public class UserServiceImpl implements UserService {
         newUser.setTenant(tenant);
         newUser.setPhoneNumber(userDto.getPhoneNumber());
         newUser.setStatus(UserStatus.ACTIVE);
+        newUser.setUserSettings(userSettings);
         newUser.setRoles(new ArrayList<>(List.of(userRole)));
 
         var createdUser = userRepository.save(newUser);
