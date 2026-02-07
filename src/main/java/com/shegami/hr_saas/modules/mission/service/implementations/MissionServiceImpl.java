@@ -8,6 +8,7 @@ import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.mission.dto.ClientDto;
 import com.shegami.hr_saas.modules.mission.dto.MissionDto;
+import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
@@ -54,10 +55,22 @@ public class MissionServiceImpl implements MissionService {
     public Page<MissionDto> getMissionByConsultant(Pageable pageable) {
         String userId = UserContextHolder.getCurrentUserContext().userId();
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        log.debug("Fetching missions for Consultant : {} From Tenant : {}", userId, tenantId );
+
+        log.info("Fetching missions for Consultant : {} From Tenant : {}", userId, tenantId );
 
         return missionRepository.findByConsultantIdAndTenantId(pageable, tenantId, userId).map(missionMapper::toDto);
     }
+
+    @Transactional
+    @Override
+    public int assignConsultantToMission(String consultantId, String missionId) {
+        log.info("Assigning consultant {} to mission ID: {}", consultantId ,missionId);
+
+        Consultant consultant = consultantRepository.findById(consultantId).orElseThrow(() -> new ResourceNotFoundException("Consultant not found with ID: " + consultantId));
+
+        return missionRepository.assignConsultantToMission(missionId, consultant);
+    }
+
 
     @Override
     @Transactional

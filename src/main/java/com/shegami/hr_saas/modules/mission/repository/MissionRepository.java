@@ -1,9 +1,11 @@
 package com.shegami.hr_saas.modules.mission.repository;
 
+import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,4 +29,8 @@ public interface MissionRepository extends JpaRepository<Mission, String> {
           "AND m.status = 'ACTIVE' " +
           "AND (m.startDate <= :endDate AND m.endDate >= :startDate)")
   boolean existsOverlapForUpdate(String consultantId, LocalDate startDate, LocalDate endDate, String currentMissionId);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("UPDATE Mission SET Consultant = :consultant WHERE Mission .mission_id = :missionId")
+  int assignConsultantToMission(@Param("missionId") String missionId,@Param("consultant") Consultant consultant);
 }

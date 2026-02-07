@@ -44,6 +44,12 @@ public class MissionController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{missionId}/assign/{consultantId}")
+    public ResponseEntity<Void> assign(@PathVariable String missionId, @PathVariable String consultantId) {
+        missionService.assignConsultantToMission(missionId, consultantId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<MissionDto> getMissionById(@PathVariable String id) {
         log.info("REST request to get Mission : {}", id);
