@@ -31,6 +31,6 @@ public interface MissionRepository extends JpaRepository<Mission, String> {
   boolean existsOverlapForUpdate(String consultantId, LocalDate startDate, LocalDate endDate, String currentMissionId);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
-  @Query("UPDATE Mission SET Consultant = :consultant WHERE Mission .mission_id = :missionId")
+  @Query("UPDATE Mission m SET m.consultant = :consultant WHERE m.mission_id = :missionId")
   int assignConsultantToMission(@Param("missionId") String missionId,@Param("consultant") Consultant consultant);
 }
