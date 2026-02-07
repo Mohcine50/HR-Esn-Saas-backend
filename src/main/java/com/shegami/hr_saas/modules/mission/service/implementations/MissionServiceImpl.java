@@ -1,15 +1,13 @@
 package com.shegami.hr_saas.modules.mission.service.implementations;
 
-import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
-import com.shegami.hr_saas.modules.auth.service.UserService;
 import com.shegami.hr_saas.modules.mission.dto.ClientDto;
 import com.shegami.hr_saas.modules.mission.dto.MissionDto;
-import com.shegami.hr_saas.modules.mission.entity.Client;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
@@ -18,10 +16,8 @@ import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
 import com.shegami.hr_saas.modules.mission.service.ClientService;
 import com.shegami.hr_saas.modules.mission.service.MissionService;
-import com.shegami.hr_saas.shared.exception.AlreadyExistsException;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +47,13 @@ public class MissionServiceImpl implements MissionService {
         return missionRepository.findById(id)
                 .map(missionMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Mission not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MissionDto> getMissionByConsultant(Pageable pageable) {
+        log.debug("Fetching mission by ID: {}", id);
+        return null;
     }
 
     @Override
@@ -97,7 +100,7 @@ public class MissionServiceImpl implements MissionService {
     @Override
     @Transactional
     public MissionDto createMission(MissionDto dto) {
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         log.info("Creating mission for tenant: {}", tenantId);
         Tenant tenant = tenantService.getTenant(tenantId);
 
@@ -120,7 +123,7 @@ public class MissionServiceImpl implements MissionService {
     @Override
     @Transactional(readOnly = true)
     public Page<MissionDto> getMissionsByTenant(Pageable pageable) {
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         return missionRepository.findByTenantId(pageable, tenantId)
                 .map(missionMapper::toDto);
     }

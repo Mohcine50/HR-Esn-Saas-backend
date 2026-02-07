@@ -31,6 +31,12 @@ public class MissionController {
         return ResponseEntity.ok(missionService.getMissionsByTenant(pageable));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<Page<MissionDto>> getMissionsForConsultant(
+            @PageableDefault(size = 10) Pageable pageable
+    ){
+        return ResponseEntity.ok(missionService.getMissionByConsultant(pageable));
+    }
 
     @PatchMapping("/{id}/terminate")
     public ResponseEntity<Void> terminate(@PathVariable String id) {

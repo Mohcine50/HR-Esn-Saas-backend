@@ -11,4 +11,5 @@ public interface MissionService {
     MissionDto updateMission(MissionDto dto);
     void deleteMission(String id);
     MissionDto getMissionById(String id);
+    Page<MissionDto> getMissionByConsultant(Pageable pageable);
 }

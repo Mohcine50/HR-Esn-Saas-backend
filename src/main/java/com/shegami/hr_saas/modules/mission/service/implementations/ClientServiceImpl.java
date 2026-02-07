@@ -1,6 +1,6 @@
 package com.shegami.hr_saas.modules.mission.service.implementations;
 
-import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.mission.dto.ClientDto;
@@ -82,7 +82,7 @@ public class ClientServiceImpl implements ClientService {
 
 
         // Get Tenant from db
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         Tenant tenant = tenantService.getTenant(tenantId);
 
         Client client = clientMapper.toEntity(clientDto);
@@ -97,7 +97,7 @@ public class ClientServiceImpl implements ClientService {
     @Transactional(readOnly = true)
     public Page<ClientDto> getAllClients(Pageable pageable) {
         log.info("Fetching paged clients: page {}, size {}", pageable.getPageNumber(), pageable.getPageSize());
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         return clientRepository.findByTenantId(pageable, tenantId)
                 .map(clientMapper::toDto);
     }

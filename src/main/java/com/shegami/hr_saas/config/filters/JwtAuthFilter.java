@@ -1,10 +1,10 @@
 package com.shegami.hr_saas.config.filters;
 
 import com.nimbusds.jose.shaded.gson.JsonObject;
-import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.User;
-import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.shared.model.UserContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,7 +17,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -115,7 +114,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     authorities
             );
 
-            TenantContextHolder.setCurrentTenant(tenantId);
+
+
+            UserContextHolder.setCurrentUserContext(new UserContext(userId, tenantId, user.getEmail()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 

@@ -1,7 +1,6 @@
 package com.shegami.hr_saas.modules.mission.service.implementations;
 
-import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
-import com.shegami.hr_saas.modules.auth.dto.UserDto;
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
@@ -11,9 +10,6 @@ import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
-import com.shegami.hr_saas.modules.hr.entity.Employee;
-import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
-import com.shegami.hr_saas.modules.hr.service.EmployeeService;
 import com.shegami.hr_saas.modules.mission.dto.ConsultantDto;
 import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.enums.ConsultantStatus;
@@ -29,9 +25,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 import static com.shegami.hr_saas.modules.hr.utils.PasswordGenerator.generatePassword;
 
@@ -77,7 +70,7 @@ public class ConsultantServiceImpl implements ConsultantService {
         }
 
         // Get Tenant from db
-        var tenantId = TenantContextHolder.getCurrentTenant();
+        var tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         Tenant tenant = tenantService.getTenant(tenantId);
 
         UserRole userRole = userRoleService.getUserRoleByName(UserRoles.EMPLOYEE.toString());

@@ -1,6 +1,6 @@
 package com.shegami.hr_saas.modules.upload.service.implementations;
 
-import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
@@ -44,7 +44,7 @@ public class UploadServiceImpl implements UploadService {
     @Transactional
     @Override
     public UploadResponse initiateUpload(UploadRequest uploadRequest) {
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         Tenant tenant = tenantService.getTenant(tenantId);
 
         String userEmail = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

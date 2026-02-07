@@ -1,6 +1,6 @@
 package com.shegami.hr_saas.modules.hr.service.implementations;
 
-import com.shegami.hr_saas.config.domain.context.TenantContextHolder;
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
@@ -14,7 +14,6 @@ import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
 import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
-import com.shegami.hr_saas.modules.hr.exception.EmployeeAlreadyExistException;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
 import com.shegami.hr_saas.modules.hr.mapper.EmployeeMapper;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
@@ -78,7 +77,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeDto AddNewEmployee(InviteEmployeeDto employee) {
 
         // Get Tenant from db
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         Tenant tenant = tenantService.getTenant(tenantId);
 
         //TODO: needs to make it case insensitive
@@ -124,13 +123,13 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Page<EmployeeDto> getAllEmployees(Pageable pageable) {
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         return employeeRepository.findByTenantId(pageable,tenantId).map(employeeMapper::toDto);
     }
 
     @Override
     public List<EmployeesCountByContract> countEmployeesByContract() {
-        String tenantId = TenantContextHolder.getCurrentTenant();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         return employeeRepository.countEmployeeByContractType(tenantId);
     }
 }
