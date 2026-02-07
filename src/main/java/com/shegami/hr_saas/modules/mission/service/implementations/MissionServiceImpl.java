@@ -52,8 +52,11 @@ public class MissionServiceImpl implements MissionService {
     @Override
     @Transactional(readOnly = true)
     public Page<MissionDto> getMissionByConsultant(Pageable pageable) {
-        log.debug("Fetching mission by ID: {}", id);
-        return null;
+        String userId = UserContextHolder.getCurrentUserContext().userId();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        log.debug("Fetching missions for Consultant : {} From Tenant : {}", userId, tenantId );
+
+        return missionRepository.findByConsultantIdAndTenantId(pageable, tenantId, userId).map(missionMapper::toDto);
     }
 
     @Override

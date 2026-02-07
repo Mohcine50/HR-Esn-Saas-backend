@@ -11,10 +11,11 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 public interface MissionRepository extends JpaRepository<Mission, String> {
-  @Query("SELECT m FROM Mission m WHERE m.tenant.tenantId = :tenant")
-  Page<Mission> findByTenantId(Pageable pageable, @Param("tenant") String tenant);
+  @Query("SELECT m FROM Mission m WHERE m.tenant.tenantId = :tenantId")
+  Page<Mission> findByTenantId(Pageable pageable, @Param("tenantId") String tenantId);
 
-  Optional<Mission> findByConsultant_ConsultantId(String consultantId);
+  @Query("SELECT m FROM Mission m WHERE m.tenant.tenantId = :tenantId AND m.consultant.consultantId = :consultantId")
+  Page<Mission> findByConsultantIdAndTenantId(Pageable pageable, @Param("tenantId") String tenantId, @Param("consultantId") String consultantId);
 
   @Query("SELECT COUNT(m) > 0 FROM Mission m WHERE m.consultant.consultantId = :consultantId " +
           "AND m.status = 'ACTIVE' " +
