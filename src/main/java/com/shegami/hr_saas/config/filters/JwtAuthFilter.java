@@ -125,6 +125,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } catch (JwtException exception) {
             jsonObject.addProperty("Message", "INVALID TOKEN");
             writeResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, jsonObject);
+        }finally {
+            UserContextHolder.clearCurrentUserContext();
         }
 
     }
