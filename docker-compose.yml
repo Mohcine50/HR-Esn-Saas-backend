@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   db:
-    image: postgres
+    image: postgres:17-alpine
     container_name: local_pgdb
     restart: always
     ports:
