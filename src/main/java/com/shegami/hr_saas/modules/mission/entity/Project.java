@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.mission.entity;
 
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.mission.enums.Priority;
+import com.shegami.hr_saas.modules.mission.enums.ProjectStatus;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -32,6 +33,9 @@ public class Project extends BaseTenantEntity {
     @OneToMany
     @JoinTable()
     private Set<Mission> missions;
+
+    @Enumerated(EnumType.STRING)
+    private ProjectStatus projectStatus;
 
     @Id
     @Column(name = "project_id", nullable = false)
