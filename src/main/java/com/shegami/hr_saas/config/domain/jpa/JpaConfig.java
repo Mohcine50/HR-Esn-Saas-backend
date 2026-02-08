@@ -1,7 +1,9 @@
 package com.shegami.hr_saas.config.domain.jpa;
 
+import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
+import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -13,10 +15,15 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @Configuration
 @AllArgsConstructor
-@EnableJpaAuditing
+@EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 public class JpaConfig {
 
     private final UserRoleService userRoleService;
+
+    @Bean
+    public AuditorAware<User> auditorProvider(UserRepository userRepository) {
+        return new JpaAuditorAware(userRepository);
+    }
 
     @Bean
     public CommandLineRunner commandLineRunner() {
