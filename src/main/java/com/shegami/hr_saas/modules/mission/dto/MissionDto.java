@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.mission.dto;
 
 import com.shegami.hr_saas.modules.auth.dto.TenantDto;
 import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
+import com.shegami.hr_saas.modules.mission.enums.MissionPriority;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,6 +28,7 @@ public class MissionDto implements Serializable {
     ClientDto client;
     ConsultantDto consultant;
     EmployeeDto accountManager;
+    MissionPriority priority;
     BigDecimal dailyRate;
     LocalDate startDate;
     LocalDate endDate;

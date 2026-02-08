@@ -1,6 +1,7 @@
 package com.shegami.hr_saas.modules.mission.entity;
 
 import com.shegami.hr_saas.modules.hr.entity.Employee;
+import com.shegami.hr_saas.modules.mission.enums.MissionPriority;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
@@ -39,6 +40,9 @@ public class Mission extends BaseTenantEntity {
 
     @Enumerated(EnumType.STRING)
     private MissionStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private MissionPriority priority;
 
     @Id
     @Column(name = "mission_id", nullable = false)
