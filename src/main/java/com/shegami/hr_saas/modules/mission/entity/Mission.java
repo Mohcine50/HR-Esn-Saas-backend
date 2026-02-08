@@ -44,6 +44,8 @@ public class Mission extends BaseTenantEntity {
     @Enumerated(EnumType.STRING)
     private Priority priority;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Project project;
 
     @Id
     @Column(name = "mission_id", nullable = false)

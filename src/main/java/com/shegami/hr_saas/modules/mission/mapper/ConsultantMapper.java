@@ -12,5 +12,6 @@ public interface ConsultantMapper {
 
     ConsultantDto toDto(Consultant consultant);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)Consultant partialUpdate(ConsultantDto consultantDto, @MappingTarget Consultant consultant);
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    Consultant partialUpdate(ConsultantDto consultantDto, @MappingTarget Consultant consultant);
 }

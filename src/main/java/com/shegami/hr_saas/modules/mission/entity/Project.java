@@ -1,5 +1,6 @@
 package com.shegami.hr_saas.modules.mission.entity;
 
+import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.mission.enums.Priority;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
@@ -23,6 +24,14 @@ public class Project extends BaseTenantEntity {
 
     @ElementCollection
     private Set<String> tags;
+
+    @ManyToMany
+    @JoinTable()
+    private Set<Consultant> consultants;
+
+    @OneToMany
+    @JoinTable()
+    private Set<Mission> missions;
 
     @Id
     @Column(name = "project_id", nullable = false)
