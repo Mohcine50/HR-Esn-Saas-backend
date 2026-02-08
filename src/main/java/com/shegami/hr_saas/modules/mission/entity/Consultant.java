@@ -54,6 +54,7 @@ public class Consultant extends BaseTenantEntity {
     private Set<String> skills = new HashSet<>();
 
     private String cvS3Key;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
