@@ -29,4 +29,5 @@ public class UserDto implements Serializable {
     UserStatus status;
     LocalDateTime lastLoginAt;
     String userId;
+    UserSettingsDto userSettings;
 }

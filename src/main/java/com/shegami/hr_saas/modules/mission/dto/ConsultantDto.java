@@ -17,7 +17,6 @@ import java.util.Set;
  */
 @Value
 public class ConsultantDto implements Serializable {
-    TenantDto tenant;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     String firstName;

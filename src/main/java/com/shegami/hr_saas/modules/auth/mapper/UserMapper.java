@@ -2,9 +2,10 @@ package com.shegami.hr_saas.modules.auth.mapper;
 
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.dto.UserDto;
+import com.shegami.hr_saas.modules.auth.entity.UserSettings;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {UserRoleMapper.class})
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {UserRoleMapper.class, UserSettings.class})
 public interface UserMapper {
 
 

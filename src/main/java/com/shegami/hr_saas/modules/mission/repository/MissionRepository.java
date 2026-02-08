@@ -33,4 +33,6 @@ public interface MissionRepository extends JpaRepository<Mission, String> {
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("UPDATE Mission m SET m.consultant = :consultant WHERE m.mission_id = :missionId")
   int assignConsultantToMission(@Param("missionId") String missionId,@Param("consultant") Consultant consultant);
+
+
 }
