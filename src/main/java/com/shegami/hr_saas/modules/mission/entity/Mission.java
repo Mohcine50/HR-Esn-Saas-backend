@@ -3,6 +3,7 @@ package com.shegami.hr_saas.modules.mission.entity;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.mission.enums.Priority;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -46,6 +48,10 @@ public class Mission extends BaseTenantEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Project project;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinTable()
+    private Set<UploadFile> attachments;
 
     @Id
     @Column(name = "mission_id", nullable = false)

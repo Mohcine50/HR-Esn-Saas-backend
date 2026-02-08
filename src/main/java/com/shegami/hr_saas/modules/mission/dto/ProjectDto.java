@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.mission.dto;
 
 import com.shegami.hr_saas.modules.auth.dto.UserDto;
 import com.shegami.hr_saas.modules.mission.enums.Priority;
+import com.shegami.hr_saas.modules.mission.enums.ProjectStatus;
 import lombok.Value;
 
 import java.io.Serializable;
@@ -24,4 +25,6 @@ public class ProjectDto implements Serializable {
     Set<ConsultantDto> consultants;
     Set<MissionDto> missions;
     String projectId;
+    ProjectStatus projectStatus;
+
 }
