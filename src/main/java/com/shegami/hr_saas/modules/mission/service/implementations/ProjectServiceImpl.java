@@ -33,7 +33,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Page<ProjectDto> searchProjects(String keyword, ProjectStatus status, Pageable pageable) {
+    public Page<ProjectDto> searchProjects(String keyword, Pageable pageable) {
         return null;
     }
 
