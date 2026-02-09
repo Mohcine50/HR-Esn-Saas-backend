@@ -6,8 +6,7 @@ import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,6 +16,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "missions")
 public class Mission extends BaseTenantEntity {
 
@@ -27,18 +29,12 @@ public class Mission extends BaseTenantEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Client client;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Consultant consultant;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable()
+    private Set<Consultant> consultants;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Employee accountManager;
-
-    @Column(nullable = false)
-    private BigDecimal dailyRate;
-
-    @Column(nullable = false)
-    private LocalDate startDate;
-    private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
     private MissionStatus status;
@@ -58,11 +54,11 @@ public class Mission extends BaseTenantEntity {
 
     @Id
     @Column(name = "mission_id", nullable = false)
-    private String mission_id;
+    private String missionId;
     @PrePersist
     public void generateMissionId() {
-        if (this.mission_id == null) {
-            this.mission_id = "MIS-" + UUID.randomUUID();
+        if (this.missionId == null) {
+            this.missionId = "MIS-" + UUID.randomUUID();
         }
     }
 

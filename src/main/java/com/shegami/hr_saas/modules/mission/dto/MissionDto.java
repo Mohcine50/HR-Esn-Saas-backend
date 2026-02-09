@@ -12,6 +12,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 /**
  * DTO for {@link com.shegami.hr_saas.modules.mission.entity.Mission}
@@ -26,13 +28,9 @@ public class MissionDto implements Serializable {
     String title;
     String description;
     ClientDto client;
-    ConsultantDto consultant;
+    Set<ConsultantDto> consultant;
     EmployeeDto accountManager;
     Priority priority;
-    BigDecimal dailyRate;
-    LocalDate startDate;
-    LocalDate endDate;
     MissionStatus status;
-    String mission_id;
-    String clientId;
+    String missionId;
 }

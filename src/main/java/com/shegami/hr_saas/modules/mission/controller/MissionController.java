@@ -1,6 +1,7 @@
 package com.shegami.hr_saas.modules.mission.controller;
 
 import com.shegami.hr_saas.modules.mission.dto.MissionDto;
+import com.shegami.hr_saas.modules.mission.dto.NewMissionRequest;
 import com.shegami.hr_saas.modules.mission.service.MissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ public class MissionController {
     private final MissionService missionService;
 
     @PostMapping
-    public ResponseEntity<MissionDto> create(@Valid @RequestBody MissionDto dto) {
+    public ResponseEntity<MissionDto> create(@Valid @RequestBody NewMissionRequest dto) {
         return new ResponseEntity<>(missionService.createMission(dto), HttpStatus.CREATED);
     }
 
