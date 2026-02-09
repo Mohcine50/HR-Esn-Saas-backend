@@ -13,20 +13,20 @@ public interface ProjectService {
 
     ProjectDto createProject(CreateProjectRequest request);
 
-    ProjectDto updateProject(Long projectId, UpdateProjectRequest request);
+    ProjectDto updateProject(String projectId, UpdateProjectRequest request);
 
-    ProjectDto getProjectById(Long projectId);
+    ProjectDto getProjectById(String projectId);
 
     Page<ProjectDto> getProjects(Pageable pageable);
 
     Page<ProjectDto> searchProjects(String keyword, Pageable pageable);
 
-    void changeProjectStatus(Long projectId, ProjectStatus status);
+    void changeProjectStatus(String projectId, ProjectStatus status);
 
-    void assignUserToProject(Long projectId, Long userId);
+    void assignUserToProject(String projectId, Long userId);
 
-    void removeUserFromProject(Long projectId, Long userId);
+    void removeUserFromProject(String projectId, Long userId);
 
-    void deleteProject(Long projectId);
+    void deleteProject(String projectId);
 }
 

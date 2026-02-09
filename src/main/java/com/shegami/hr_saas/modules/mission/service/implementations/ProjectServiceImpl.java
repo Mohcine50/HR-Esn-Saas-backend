@@ -18,12 +18,12 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public ProjectDto updateProject(Long projectId, UpdateProjectRequest request) {
+    public ProjectDto updateProject(String projectId, UpdateProjectRequest request) {
         return null;
     }
 
     @Override
-    public ProjectDto getProjectById(Long projectId) {
+    public ProjectDto getProjectById(String projectId) {
         return null;
     }
 
@@ -38,22 +38,22 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public void changeProjectStatus(Long projectId, ProjectStatus status) {
+    public void changeProjectStatus(String projectId, ProjectStatus status) {
 
     }
 
     @Override
-    public void assignUserToProject(Long projectId, Long userId) {
+    public void assignUserToProject(String projectId, Long userId) {
 
     }
 
     @Override
-    public void removeUserFromProject(Long projectId, Long userId) {
+    public void removeUserFromProject(String projectId, Long userId) {
 
     }
 
     @Override
-    public void deleteProject(Long projectId) {
+    public void deleteProject(String projectId) {
 
     }
 }
