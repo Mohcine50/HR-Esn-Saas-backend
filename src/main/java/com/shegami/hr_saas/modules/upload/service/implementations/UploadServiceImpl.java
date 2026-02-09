@@ -26,6 +26,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -132,6 +134,11 @@ public class UploadServiceImpl implements UploadService {
         return uploadFileRepository.findById(fileId).orElseThrow(
                 () -> new ResourceNotFoundException("File not found")
         );
+    }
+
+    @Override
+    public Set<UploadFile> getUploadFiles(Set<String> fileIds) {
+        return new HashSet<>(uploadFileRepository.findAllById(fileIds));
     }
 
 
