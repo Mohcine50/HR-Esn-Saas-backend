@@ -140,7 +140,7 @@ public class MissionServiceImpl implements MissionService {
         var consultants = consultantService.getAllConsultants(dto.getConsultants());
         var attachements = uploadService.getUploadFiles(dto.getAttachements());
         Project project = projectMapper.toEntity(projectService.getProjectById(dto.getClient()));
-        Client client = clientMapper.toEntity(clientService.getClientById(dto.getClient()));
+        Client client = clientService.getClientByIdForMission(dto.getClient());
 
         Mission mission = Mission.builder()
                 .client(client)
@@ -155,7 +155,6 @@ public class MissionServiceImpl implements MissionService {
                 .build();
         mission.setTenant(tenant);
         mission.setAccountManager(user.getEmployee());
-
         var savedMission = missionRepository.save(mission);
         log.info("Mission successfully created with ID: {}", savedMission.getMissionId());
 

@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 public interface ClientService {
     ClientDto getClientById(String id);
     Client getClientByEmail(String Email);
+    Client getClientByIdForMission(String id);
 
     Client saveClient(Client client);
     Client updateClient(Client client);

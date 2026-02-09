@@ -45,6 +45,11 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    public Client getClientByIdForMission(String id) {
+        return clientRepository.findById(id).orElse(null);
+    }
+
+    @Override
     @Transactional
     public Client saveClient(Client client) {
         log.info("Saving client entity for email: {}", client.getEmail());
