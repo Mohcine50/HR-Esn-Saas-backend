@@ -8,15 +8,25 @@ import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.mission.dto.ClientDto;
 import com.shegami.hr_saas.modules.mission.dto.MissionDto;
+import com.shegami.hr_saas.modules.mission.dto.NewMissionRequest;
+import com.shegami.hr_saas.modules.mission.entity.Client;
 import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
+import com.shegami.hr_saas.modules.mission.entity.Project;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
+import com.shegami.hr_saas.modules.mission.mapper.ConsultantMapper;
 import com.shegami.hr_saas.modules.mission.mapper.MissionMapper;
+import com.shegami.hr_saas.modules.mission.mapper.ProjectMapper;
+import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
 import com.shegami.hr_saas.modules.mission.service.ClientService;
+import com.shegami.hr_saas.modules.mission.service.ConsultantService;
 import com.shegami.hr_saas.modules.mission.service.MissionService;
+import com.shegami.hr_saas.modules.mission.service.ProjectService;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
+import com.shegami.hr_saas.modules.upload.service.UploadService;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +51,10 @@ public class MissionServiceImpl implements MissionService {
     private final UserRepository userRepository;
     private final ClientService clientService;
     private final ClientMapper clientMapper;
+    private final ProjectService projectService;
+    private final ProjectMapper projectMapper;
+    private final ConsultantService consultantService;
+    private final UploadService uploadService;
 
     @Override
     @Transactional(readOnly = true)
@@ -75,25 +90,12 @@ public class MissionServiceImpl implements MissionService {
     @Override
     @Transactional
     public MissionDto updateMission(MissionDto dto) {
-        log.info("Updating mission ID: {}", dto.getMission_id());
+        log.info("Updating mission ID: {}", dto.getMissionId());
 
         // 1. Fetch existing entity
-        Mission existingMission = missionRepository.findById(dto.getMission_id())
-                .orElseThrow(() -> new ResourceNotFoundException("Mission not found with ID: " + dto.getMission_id()));
+        Mission existingMission = missionRepository.findById(dto.getMissionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Mission not found with ID: " + dto.getMissionId()));
 
-        // 2. Senior Business Rule: If dates changed, re-validate availability
-        boolean datesChanged = !existingMission.getStartDate().equals(dto.getStartDate()) ||
-                (existingMission.getEndDate() != null && !existingMission.getEndDate().equals(dto.getEndDate()));
-
-        if (datesChanged) {
-            // Exclude current mission from the overlap check
-            boolean isOverlapping = missionRepository.existsOverlapForUpdate(
-                    dto.getConsultant().getConsultantId(), dto.getStartDate(), dto.getEndDate(), dto.getMission_id());
-
-            if (isOverlapping) {
-                throw new IllegalStateException("Cannot update: Consultant has another active mission during these new dates.");
-            }
-        }
         missionMapper.partialUpdate(dto, existingMission);
 
         Mission updatedMission = missionRepository.save(existingMission);
@@ -115,25 +117,38 @@ public class MissionServiceImpl implements MissionService {
 
     @Override
     @Transactional
-    public MissionDto createMission(MissionDto dto) {
+    public MissionDto createMission(NewMissionRequest dto) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         log.info("Creating mission for tenant: {}", tenantId);
         Tenant tenant = tenantService.getTenant(tenantId);
 
         String userEmail = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.info(userEmail);
         User user = userRepository.findByEmail(userEmail).orElseThrow(
                 ()-> new UserNotFoundException("User not found with email: " + userEmail));
 
-        ClientDto client = clientService.getClientById(dto.getClientId());
-        Mission mission = missionMapper.toEntity(dto);
-        mission.setClient(clientMapper.toEntity(client));
-        mission.setStatus(MissionStatus.ON_HOLD);
+        var consultants = consultantService.getAllConsultants(dto.getConsultants());
+        var attachements = uploadService.getUploadFiles(dto.getAttachements());
+        Project project = projectMapper.toEntity(projectService.getProjectById(dto.getClient()));
+        Client client = clientMapper.toEntity(clientService.getClientById(dto.getClient()));
+
+        Mission mission = Mission.builder()
+                .client(client)
+                .status(dto.getStatus())
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .priority(dto.getPriority())
+                .project(project)
+                .consultants(consultants)
+                .labels(dto.getLabels())
+                .attachments(attachements)
+                .build();
         mission.setTenant(tenant);
         mission.setAccountManager(user.getEmployee());
 
+        var savedMission = missionRepository.save(mission);
+        log.info("Mission successfully created with ID: {}", savedMission.getMissionId());
 
-        return missionMapper.toDto(missionRepository.save(mission));
+        return missionMapper.toDto(savedMission);
     }
 
     @Override
@@ -151,7 +166,6 @@ public class MissionServiceImpl implements MissionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Mission not found"));
 
         mission.setStatus(MissionStatus.COMPLETED);
-        mission.setEndDate(LocalDate.now());
         missionRepository.save(mission);
     }
 }
