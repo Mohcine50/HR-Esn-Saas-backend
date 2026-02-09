@@ -126,6 +126,14 @@ public class UploadServiceImpl implements UploadService {
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UploadFile getUploadFile(String fileId) {
+        return uploadFileRepository.findById(fileId).orElseThrow(
+                () -> new ResourceNotFoundException("File not found")
+        );
+    }
+
 
     public boolean doesObjectExist(String objectKey) {
         HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
