@@ -43,12 +43,12 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public void assignUserToProject(String projectId, Long userId) {
+    public void assignUserToProject(String projectId, String userId) {
 
     }
 
     @Override
-    public void removeUserFromProject(String projectId, Long userId) {
+    public void removeUserFromProject(String projectId, String userId) {
 
     }
 

@@ -12,7 +12,7 @@ public interface MissionService {
     Page<MissionDto> getMissionsByTenant(Pageable pageable);
     void terminateMission(String id);
 
-    int assignConsultantToMission(String consultantId, String missionId);
+    void assignConsultantToMission(String consultantId, String missionId);
 
     MissionDto updateMission(MissionDto dto);
     void deleteMission(String id);

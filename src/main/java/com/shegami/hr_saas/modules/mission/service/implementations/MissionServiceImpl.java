@@ -78,12 +78,23 @@ public class MissionServiceImpl implements MissionService {
 
     @Transactional
     @Override
-    public int assignConsultantToMission(String consultantId, String missionId) {
-        log.info("Assigning consultant {} to mission ID: {}", consultantId ,missionId);
+    public void assignConsultantToMission(String consultantId, String missionId) {
+        log.info("Assigning consultant {} to mission {}", consultantId, missionId);
 
-        Consultant consultant = consultantRepository.findById(consultantId).orElseThrow(() -> new ResourceNotFoundException("Consultant not found with ID: " + consultantId));
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mission not found with ID: " + missionId));
 
-        return missionRepository.assignConsultantToMission(missionId, consultant);
+        Consultant consultant = consultantRepository.findById(consultantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Consultant not found with ID: " + consultantId));
+
+        if (mission.getConsultants().contains(consultant)) {
+            log.warn("Consultant {} is already assigned to mission {}", consultantId, missionId);
+            return;
+        }
+
+        mission.getConsultants().add(consultant);
+
+        log.info("Successfully assigned consultant {} to mission {}", consultantId, missionId);
     }
 
 

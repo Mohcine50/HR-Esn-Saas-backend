@@ -23,9 +23,9 @@ public interface ProjectService {
 
     void changeProjectStatus(String projectId, ProjectStatus status);
 
-    void assignUserToProject(String projectId, Long userId);
+    void assignUserToProject(String projectId, String userId);
 
-    void removeUserFromProject(String projectId, Long userId);
+    void removeUserFromProject(String projectId, String userId);
 
     void deleteProject(String projectId);
 }

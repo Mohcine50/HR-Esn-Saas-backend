@@ -58,7 +58,7 @@ public class ProjectController {
     // UPDATE
     @PutMapping("/{id}")
     public ResponseEntity<ProjectDto> updateProject(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestBody @Valid UpdateProjectRequest request
     ) {
         return ResponseEntity.ok(
@@ -69,7 +69,7 @@ public class ProjectController {
     // CHANGE STATUS (business action)
     @PatchMapping("/{id}/status")
     public ResponseEntity<Void> changeProjectStatus(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam ProjectStatus status
     ) {
         projectService.changeProjectStatus(id, status);
@@ -78,8 +78,8 @@ public class ProjectController {
 
     @PostMapping("/{projectId}/users/{userId}")
     public ResponseEntity<Void> assignUserToProject(
-            @PathVariable Long projectId,
-            @PathVariable Long userId
+            @PathVariable String projectId,
+            @PathVariable String userId
     ) {
         projectService.assignUserToProject(projectId, userId);
         return ResponseEntity.noContent().build();
@@ -87,8 +87,8 @@ public class ProjectController {
 
     @DeleteMapping("/{projectId}/users/{userId}")
     public ResponseEntity<Void> removeUserFromProject(
-            @PathVariable Long projectId,
-            @PathVariable Long userId
+            @PathVariable String projectId,
+            @PathVariable String userId
     ) {
         projectService.removeUserFromProject(projectId, userId);
         return ResponseEntity.noContent().build();
