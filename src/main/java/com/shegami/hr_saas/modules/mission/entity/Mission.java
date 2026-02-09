@@ -53,6 +53,9 @@ public class Mission extends BaseTenantEntity {
     @JoinTable()
     private Set<UploadFile> attachments;
 
+    @ElementCollection
+    private Set<String> labels;
+
     @Id
     @Column(name = "mission_id", nullable = false)
     private String mission_id;
