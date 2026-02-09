@@ -7,6 +7,8 @@ import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Set;
+
 public interface ConsultantService {
 
     ConsultantDto getConsultantById(String id);
@@ -18,5 +20,6 @@ public interface ConsultantService {
 
     Page<ConsultantDto> getAllConsultant(Pageable pageable);
 
+    Set<Consultant> getAllConsultants(Set<String> ids);
 
 }

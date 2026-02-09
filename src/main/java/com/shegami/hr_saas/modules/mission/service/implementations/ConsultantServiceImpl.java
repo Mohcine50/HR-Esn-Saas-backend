@@ -26,6 +26,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.shegami.hr_saas.modules.hr.utils.PasswordGenerator.generatePassword;
 
 @Service
@@ -141,6 +144,11 @@ public class ConsultantServiceImpl implements ConsultantService {
 
         return consultantRepository.findAll(pageable)
                 .map(consultantMapper::toDto);
+    }
+
+    @Override
+    public Set<Consultant> getAllConsultants(Set<String> ids) {
+        return new HashSet<>(consultantRepository.findAllById(ids));
     }
 
 }
