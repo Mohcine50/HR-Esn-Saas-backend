@@ -49,8 +49,13 @@ public class Mission extends BaseTenantEntity {
     @JoinTable()
     private Set<UploadFile> attachments;
 
-    @ElementCollection
-    private Set<String> labels;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "mission_labels",
+            joinColumns = @JoinColumn(name = "mission_id"),
+            inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    private Set<Label> labels;
 
     @Id
     @Column(name = "mission_id", nullable = false)

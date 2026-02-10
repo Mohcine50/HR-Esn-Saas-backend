@@ -21,10 +21,7 @@ import com.shegami.hr_saas.modules.mission.mapper.ProjectMapper;
 import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
-import com.shegami.hr_saas.modules.mission.service.ClientService;
-import com.shegami.hr_saas.modules.mission.service.ConsultantService;
-import com.shegami.hr_saas.modules.mission.service.MissionService;
-import com.shegami.hr_saas.modules.mission.service.ProjectService;
+import com.shegami.hr_saas.modules.mission.service.*;
 import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.modules.upload.service.UploadService;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
@@ -55,6 +52,7 @@ public class MissionServiceImpl implements MissionService {
     private final ProjectMapper projectMapper;
     private final ConsultantService consultantService;
     private final UploadService uploadService;
+    private final LabelsService labelsService;
 
     @Override
     @Transactional(readOnly = true)
@@ -141,6 +139,7 @@ public class MissionServiceImpl implements MissionService {
         var attachements = uploadService.getUploadFiles(dto.getAttachements());
         Project project = projectMapper.toEntity(projectService.getProjectById(dto.getClient()));
         Client client = clientService.getClientByIdForMission(dto.getClient());
+        var labels = labelsService.getAllLabels(dto.getLabels());
 
         Mission mission = Mission.builder()
                 .client(client)
@@ -150,7 +149,7 @@ public class MissionServiceImpl implements MissionService {
                 .priority(dto.getPriority())
                 .project(project)
                 .consultants(consultants)
-                .labels(dto.getLabels())
+                .labels(labels)
                 .attachments(attachements)
                 .build();
         mission.setTenant(tenant);
