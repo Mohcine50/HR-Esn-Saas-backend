@@ -19,7 +19,6 @@ public class Label extends BaseTenantEntity {
 
     private String color;
 
-
     @Formula("(SELECT COUNT(*) FROM mission_labels ml WHERE ml.label_id = label_id)")
     private Integer missions;
 
