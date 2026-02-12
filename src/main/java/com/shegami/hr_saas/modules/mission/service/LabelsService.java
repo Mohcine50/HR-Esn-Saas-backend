@@ -14,7 +14,7 @@ public interface LabelsService {
     Set<Label> getAllLabels(Set<String> ids);
     LabelDto saveLabel(LabelDto labelDto);
     LabelDto getLabelById(String id);
-    LabelDto updateLabel(LabelDto labelDto);
+    LabelDto updateLabel(String labelId,LabelDto labelDto);
     void deleteLabel(String id);
     Page<LabelDto> getAllLabels(Pageable pageable);
     LabelDto getLabelByName(String name);

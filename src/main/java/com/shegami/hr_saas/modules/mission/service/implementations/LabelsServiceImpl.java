@@ -73,10 +73,10 @@ public class LabelsServiceImpl implements LabelsService {
 
     @Override
     @Transactional
-    public LabelDto updateLabel(LabelDto labelDto) {
+    public LabelDto updateLabel(String labelId,LabelDto labelDto) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
 
-        Label existingLabel = labelRepository.findByLabelIdAndTenantTenantId(labelDto.getLabelId(), tenantId)
+        Label existingLabel = labelRepository.findByLabelIdAndTenantTenantId(labelId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Label not found"));
 
         labelMapper.partialUpdate(labelDto, existingLabel);

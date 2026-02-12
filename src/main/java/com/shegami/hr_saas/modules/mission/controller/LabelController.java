@@ -43,7 +43,7 @@ public class LabelController {
                 @Valid @RequestBody LabelDto labelDto
         ) {
             log.info("Updating label ID: {}", id);
-            return ResponseEntity.ok(labelsService.updateLabel(labelDto));
+            return ResponseEntity.ok(labelsService.updateLabel(id,labelDto));
         }
 
 

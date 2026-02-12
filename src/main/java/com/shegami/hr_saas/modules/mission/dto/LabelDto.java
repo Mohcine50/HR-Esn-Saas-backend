@@ -1,6 +1,6 @@
 package com.shegami.hr_saas.modules.mission.dto;
 
-import lombok.Value;
+import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
