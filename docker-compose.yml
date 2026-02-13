@@ -69,6 +69,19 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  # --- LOCLA MAILING SMTP FOR SENDING AND CATCHING ALL OUTGOING EMAILS
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog_container
+    restart: always
+    ports:
+      - "1025:1025" # SMTP server port
+      - "8025:8025" # Web UI port
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+
 volumes:
   local_pgdata:
   pgadmin-data:
