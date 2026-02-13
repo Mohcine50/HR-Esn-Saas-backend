@@ -5,6 +5,7 @@ import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
+import com.shegami.hr_saas.modules.notifications.service.EmailSenderService;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationContext;
