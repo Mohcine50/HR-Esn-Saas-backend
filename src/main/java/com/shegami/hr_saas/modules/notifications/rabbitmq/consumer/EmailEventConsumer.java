@@ -21,10 +21,10 @@ public class EmailEventConsumer {
         log.info("Received Message: {}", event);
 
         try {
-            emailSenderService.sendEmail(
+            /*emailSenderService.sendEmail(
                     event.getUserEmail(),
                     "Please verify: " + event.getVerificationUrl()
-            );
+            );*/
         } catch (Exception e) {
             log.error("❌ Failed to send email to {}. Error: {}", event.getUserEmail(), e.getMessage());
             throw e;
