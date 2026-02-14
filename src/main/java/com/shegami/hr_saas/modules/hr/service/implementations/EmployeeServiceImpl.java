@@ -18,6 +18,9 @@ import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
 import com.shegami.hr_saas.modules.hr.mapper.EmployeeMapper;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
 import com.shegami.hr_saas.modules.hr.service.EmployeeService;
+import com.shegami.hr_saas.modules.notifications.dto.VerificationEmailEventDto;
+import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EmailEventPublisher;
+import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static com.shegami.hr_saas.modules.hr.utils.PasswordGenerator.generatePassword;
 
@@ -43,6 +47,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final TenantService tenantService;
     private final PasswordEncoder passwordEncoder;
     private final EmployeeMapper employeeMapper;
+
+    private final EmailEventPublisher emailEventPublisher;
 
 
     @Override
@@ -75,12 +81,14 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public EmployeeDto AddNewEmployee(InviteEmployeeDto employee) {
-
         // Get Tenant from db
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+
+        log.info("Invite employee with email {} for tenant of Id {}", employee.getEmail(), tenantId);
         Tenant tenant = tenantService.getTenant(tenantId);
 
         //TODO: needs to make it case insensitive
+
         // Get role from db
         UserRole userRole = userRoleService.getUserRoleByName(employee.getRoleName());
 
@@ -115,8 +123,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         // Save employee
         Employee savedEmployee = employeeRepository.save(newEmployee);
 
-        // Optional: Send invitation email
-        // sendInvitationEmail(savedUser);
+        // Send invitation email
+
+        String invitationToken = TokenGenerator.generateToken();
+
+        emailEventPublisher.sendInvitationEmail(
+                VerificationEmailEventDto.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .invitationDate(LocalDateTime.now())
+                        .userEmail(employee.getEmail())
+                        .verificationToken(invitationToken)
+                        .build()
+        );
 
         return employeeMapper.toDto(savedEmployee);
     }
@@ -132,4 +150,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         return employeeRepository.countEmployeeByContractType(tenantId);
     }
+
+
+
+
 }

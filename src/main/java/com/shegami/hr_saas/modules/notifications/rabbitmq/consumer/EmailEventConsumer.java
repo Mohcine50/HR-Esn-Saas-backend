@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.notifications.rabbitmq.consumer;
 
 import com.shegami.hr_saas.modules.notifications.dto.VerificationEmailEventDto;
 import com.shegami.hr_saas.modules.notifications.service.EmailSenderService;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -17,17 +18,14 @@ public class EmailEventConsumer {
     private final EmailSenderService emailSenderService;
 
     @RabbitListener(queues = QUEUE_NAME)
-    public void consumeVerificationEvent(VerificationEmailEventDto event) {
+    public void consumeInvitationEvent(VerificationEmailEventDto event){
         log.info("Received Message: {}", event);
 
         try {
-            /*emailSenderService.sendEmail(
-                    event.getUserEmail(),
-                    "Please verify: " + event.getVerificationUrl()
-            );*/
+            emailSenderService.sendInvitationEmail(event.getUserEmail(), event.getVerificationToken());
         } catch (Exception e) {
             log.error("❌ Failed to send email to {}. Error: {}", event.getUserEmail(), e.getMessage());
-            throw e;
+            throw new RuntimeException(e.getMessage());
         }
     }
 }

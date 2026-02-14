@@ -15,10 +15,10 @@ public class EmailEventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
 
-    public void sendVerificationEmail(VerificationEmailEventDto event) {
-        log.info("Publishing verification event for: {}", event.getUserEmail());
+    public void sendInvitationEmail(VerificationEmailEventDto event) {
+        log.info("Publishing invitation event for: {}", event.getUserEmail());
 
-        String specificRoutingKey = "notification.email.verification";
+        String specificRoutingKey = "notification.email.invitation";
 
         rabbitTemplate.convertAndSend(
                 EXCHANGE_NAME,
