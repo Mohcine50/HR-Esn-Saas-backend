@@ -1,7 +1,8 @@
-package com.shegami.hr_saas.modules.hr.dto;
+package com.shegami.hr_saas.modules.hr.mapper;
 
 import com.shegami.hr_saas.modules.auth.mapper.TenantMapper;
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
+import com.shegami.hr_saas.modules.hr.dto.InvitationDto;
 import com.shegami.hr_saas.modules.hr.entity.Invitation;
 import org.mapstruct.*;
 
