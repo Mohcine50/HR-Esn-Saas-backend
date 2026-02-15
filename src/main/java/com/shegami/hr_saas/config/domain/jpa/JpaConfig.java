@@ -29,11 +29,11 @@ public class JpaConfig {
     @Bean
     public CommandLineRunner commandLineRunner() {
         return args -> {
-            userRoleService.addUserRole(new UserRole(null, UserRoles.COMPANY_OWNER.toString()));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.ADMIN.toString()));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.MANAGER.toString()));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.FINANCIAL.toString()));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.EMPLOYEE.toString()));
+            userRoleService.addUserRole(new UserRole(null, UserRoles.COMPANY_OWNER));
+            userRoleService.addUserRole(new UserRole(null, UserRoles.ADMIN));
+            userRoleService.addUserRole(new UserRole(null, UserRoles.MANAGER));
+            userRoleService.addUserRole(new UserRole(null, UserRoles.FINANCIAL));
+            userRoleService.addUserRole(new UserRole(null, UserRoles.EMPLOYEE));
         };
     }
 

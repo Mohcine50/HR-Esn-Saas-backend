@@ -76,7 +76,7 @@ public class ConsultantServiceImpl implements ConsultantService {
         var tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         Tenant tenant = tenantService.getTenant(tenantId);
 
-        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.EMPLOYEE.toString());
+        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.EMPLOYEE);
 
         // Create new User
         String password = generatePassword();
@@ -87,7 +87,8 @@ public class ConsultantServiceImpl implements ConsultantService {
         newUser.setPassword(passwordEncoder.encode(password));
         newUser.setEmail(consultantDto.getEmail());
         newUser.setStatus(UserStatus.INVITED);
-        newUser.setIsVerified(false);
+        newUser.setPending(true);
+        newUser.setIsEmailVerified(false);
         newUser.getRoles().add(userRole);
 
         // Save user first

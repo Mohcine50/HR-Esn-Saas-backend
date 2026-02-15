@@ -3,6 +3,7 @@ package com.shegami.hr_saas.modules.auth.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
+import com.shegami.hr_saas.modules.hr.entity.Invitation;
 import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
@@ -28,9 +29,10 @@ public class User extends BaseTenantEntity {
     private String lastName;
 
     private String email;
-    private String password;
 
     @JsonIgnore
+    private String password;
+
     private String phoneNumber;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -49,8 +51,14 @@ public class User extends BaseTenantEntity {
 
     private LocalDateTime lastLoginAt;
 
-    private Boolean isVerified = false;
-    private LocalDateTime verifiedAt;
+    private Boolean isEmailVerified = false;
+    private LocalDateTime emailVerifiedAt;
+
+    private boolean isPending;
+
+    @OneToOne
+    @JoinColumn(name = "created_from_invitation_id")
+    private Invitation createdFromInvitation;
 
     @OneToOne(fetch = FetchType.EAGER, mappedBy = "user")
     private Employee employee;

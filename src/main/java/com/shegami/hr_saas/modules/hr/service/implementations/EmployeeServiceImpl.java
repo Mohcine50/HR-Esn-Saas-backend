@@ -4,6 +4,7 @@ import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
+import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
@@ -90,7 +91,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         //TODO: needs to make it case insensitive
 
         // Get role from db
-        UserRole userRole = userRoleService.getUserRoleByName(employee.getRoleName());
+        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.valueOf(employee.getRoleName()));
 
         // Create new User
         User newUser = new User();
@@ -103,7 +104,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         newUser.setPassword(passwordEncoder.encode(password));
         newUser.setEmail(employee.getEmail());
         newUser.setStatus(UserStatus.INVITED);
-        newUser.setIsVerified(false);
+        newUser.setPending(true);
+        newUser.setIsEmailVerified(false);
         newUser.getRoles().add(userRole);
 
         // Save user first

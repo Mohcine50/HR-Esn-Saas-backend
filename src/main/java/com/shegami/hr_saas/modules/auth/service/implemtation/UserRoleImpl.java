@@ -1,6 +1,7 @@
 package com.shegami.hr_saas.modules.auth.service.implemtation;
 
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
+import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.exception.UserRoleNotFoundException;
 import com.shegami.hr_saas.modules.auth.repository.UserRoleRepository;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
@@ -14,7 +15,7 @@ public class UserRoleImpl implements UserRoleService {
     private final UserRoleRepository userRoleRepository;
 
     @Override
-    public UserRole getUserRoleByName(String name) {
+    public UserRole getUserRoleByName(UserRoles name) {
         return userRoleRepository.findByName(name).orElseThrow(()-> new UserRoleNotFoundException("Role not found"));
     }
 

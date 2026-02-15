@@ -4,6 +4,7 @@ import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
+import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
@@ -100,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
         userService.updateUser(user);
 
 
-        List<String> roles = user.getRoles()
+        List<UserRoles> roles = user.getRoles()
                 .stream()
                 .map(UserRole::getName)
                 .toList();

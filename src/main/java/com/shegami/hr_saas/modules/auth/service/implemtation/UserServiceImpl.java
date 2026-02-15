@@ -58,7 +58,7 @@ public class UserServiceImpl implements UserService {
             throw new UserAlreadyExistException("User already exists, please try another email.");
         });
 
-        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.COMPANY_OWNER.toString());
+        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.COMPANY_OWNER);
         UserSettings userSettings = settingsRepository.save(new UserSettings());
 
         User newUser = new User();

@@ -1,5 +1,6 @@
 package com.shegami.hr_saas.modules.auth.entity;
 
+import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -21,8 +22,8 @@ public class UserRole {
     private String roleId;
 
     @Column(nullable = false, unique = true)
-    private String name;
-
+    @Enumerated(EnumType.STRING)
+    private UserRoles name;
 
     @PrePersist
     public void generateRoleId() {
