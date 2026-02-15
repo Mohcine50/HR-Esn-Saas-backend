@@ -6,6 +6,7 @@ import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.exception.UserRoleNotFoundException;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeAlreadyExistException;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
+import com.shegami.hr_saas.modules.hr.exception.InvitationExpiredException;
 import com.shegami.hr_saas.modules.upload.exceptions.StorageUploadException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,14 @@ public class ApiExceptionHandler {
 
         return new ResponseEntity<>(getErrorsMap(errors), HttpStatus.BAD_REQUEST);
 
+    }
+
+    @ExceptionHandler(value = InvitationExpiredException.class)
+    public ResponseEntity<Object> handleInvitationExpiredException(InvitationExpiredException invitationExpiredException) {
+
+        ApiException apiException = new ApiException(invitationExpiredException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(value = ResourceNotFoundException.class)
