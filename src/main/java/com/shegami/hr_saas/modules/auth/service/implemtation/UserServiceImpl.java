@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public boolean createUser(UserDto userDto, Tenant tenant) {
+    public User createUser(UserDto userDto, Tenant tenant) {
 
         userRepository.findByEmail(userDto.getEmail()).ifPresent(u -> {
             throw new UserAlreadyExistException("User already exists, please try another email.");
@@ -72,9 +72,9 @@ public class UserServiceImpl implements UserService {
         newUser.setUserSettings(userSettings);
         newUser.setRoles(new ArrayList<>(List.of(userRole)));
 
-        var createdUser = userRepository.save(newUser);
+        return userRepository.save(newUser);
 
-        return createdUser != null;
+
     }
 
 

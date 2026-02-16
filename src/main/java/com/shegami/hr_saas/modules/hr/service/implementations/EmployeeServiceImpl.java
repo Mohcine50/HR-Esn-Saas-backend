@@ -49,7 +49,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final EmployeeMapper employeeMapper;
 
-    private final EventPublisher emailEventPublisher;
+    private final EventPublisher eventPublisher;
 
 
     @Override
@@ -129,7 +129,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         String invitationToken = TokenGenerator.generateToken();
 
-        emailEventPublisher.sendInvitationEmail(
+       eventPublisher.sendInvitationEmail(
                 VerificationEmailEventDto.builder()
                         .eventId(UUID.randomUUID().toString())
                         .invitationDate(LocalDateTime.now())

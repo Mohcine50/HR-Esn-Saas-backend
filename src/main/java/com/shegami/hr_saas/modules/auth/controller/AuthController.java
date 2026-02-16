@@ -73,10 +73,4 @@ public class AuthController {
         return null;
     }
 
-
-    @PostMapping("accept-invite")
-    public ResponseEntity<Object> acceptInvite(InviteDto inviteDto){
-        return null;
-    }
-
 }

@@ -13,8 +13,12 @@ import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.notifications.dto.EmailVerificationMessage;
+import com.shegami.hr_saas.modules.notifications.enums.VerificationType;
+import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -51,22 +55,18 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
+    private final EventPublisher eventPublisher;
 
     @Override
     public LoginResponseDto login(LoginDto loginDto) {
-
-
-
         String jwtAccessToken = AuthUser(loginDto.getEmail(), loginDto.getPassword());
-
-        return new LoginResponseDto(jwtAccessToken,"AUTH SUCCESSFULLY");
-
-
+        return new LoginResponseDto(jwtAccessToken, "AUTH SUCCESSFULLY");
     }
 
     @Transactional
     @Override
     public RegisterResponseDto register(RegisterDto registerDto) {
+        log.info("Register user with e-mail: {}", registerDto.getEmail());
 
         userService.findUserByEmail(registerDto.getEmail()).ifPresent(u -> {
             throw new UserAlreadyExistException("User already exists, please try another email.");
@@ -74,20 +74,26 @@ public class AuthServiceImpl implements AuthService {
 
         Tenant tenant = tenantService.createTenant(TenantDto.builder()
                 .name(registerDto.getCompanyName())
-                .domain(registerDto.getCompanyDomain())
-                .build());
+                .domain(registerDto.getCompanyDomain()).build());
 
-
-        userService.createUser(UserDto.builder()
-                        .email(registerDto.getEmail())
-                        .password(passwordEncoder.encode(registerDto.getPassword()))
-                        .firstName(registerDto.getFirstName())
-                        .lastName(registerDto.getLastName())
-                        .phoneNumber(registerDto.getPhone())
+        var createdUser = userService.createUser(UserDto.builder()
+                .email(registerDto.getEmail())
+                .password(passwordEncoder.encode(registerDto.getPassword()))
+                .firstName(registerDto.getFirstName())
+                .lastName(registerDto.getLastName())
+                .phoneNumber(registerDto.getPhone())
                 .build(), tenant);
 
+        eventPublisher.publishVerificationEmail(EmailVerificationMessage.builder()
+                        .recipientEmail(registerDto.getEmail())
+                        .recipientFirstName(registerDto.getFirstName())
+                        .verificationType(VerificationType.EMAIL_VERIFICATION)
+                        .userId(createdUser.getUserId())
+                        .companyName(registerDto.getCompanyName())
+                .build());
+
         String jwtAccessToken = AuthUser(registerDto.getEmail(), registerDto.getPassword());
-        return new RegisterResponseDto(jwtAccessToken,"REGISTER SUCCESSFULLY");
+        return new RegisterResponseDto(jwtAccessToken, "REGISTER SUCCESSFULLY");
     }
 
 
@@ -101,38 +107,22 @@ public class AuthServiceImpl implements AuthService {
         userService.updateUser(user);
 
 
-        List<UserRoles> roles = user.getRoles()
-                .stream()
-                .map(UserRole::getName)
-                .toList();
+        List<UserRoles> roles = user.getRoles().stream().map(UserRole::getName).toList();
 
 
-        Collection<GrantedAuthority> authorities = new ArrayList<>(roles.stream()
-                .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
-                .toList());
+        Collection<GrantedAuthority> authorities = new ArrayList<>(roles.stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).toList());
 
         Instant instant = Instant.now();
 
-        UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                user.getEmail(), user.getPassword(), authorities
-        );
+        UserDetails userDetails = new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), authorities);
 
 
-
-        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
-                .subject(user.getUserId())
-                .issuedAt(instant)
-                .expiresAt(instant.plus(60, ChronoUnit.MINUTES))
-                .issuer("auth-service")
-                .claim("roles", roles)
-                .claim("X-Tenant-ID", user.getTenant().getTenantId())
-                .build();
+        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder().subject(user.getUserId()).issuedAt(instant).expiresAt(instant.plus(60, ChronoUnit.MINUTES)).issuer("auth-service").claim("roles", roles).claim("X-Tenant-ID", user.getTenant().getTenantId()).build();
 
 
         Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSet));
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password, authorities));
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password, authorities));
 
 
         return jwt.getTokenValue();

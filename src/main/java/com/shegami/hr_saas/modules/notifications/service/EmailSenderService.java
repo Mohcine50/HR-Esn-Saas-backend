@@ -13,7 +13,7 @@ public interface EmailSenderService {
 
     void sendInvitationEmail(String recipientEmail, String recipientFirstName, String inviterName, String invitationToken, String role, String companyName, Map<String, Object> metadata);
 
-    void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken);
+    void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken, String companyName);
 
     void sendPasswordResetEmail(String recipientEmail, String recipientFirstName, String verificationToken);
 

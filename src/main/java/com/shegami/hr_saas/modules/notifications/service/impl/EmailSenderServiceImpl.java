@@ -11,6 +11,10 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.Thymeleaf;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.util.Map;
 
@@ -21,7 +25,7 @@ import java.util.Map;
 public class EmailSenderServiceImpl implements EmailSenderService {
 
     private final JavaMailSender mailSender;
-
+    private final SpringTemplateEngine templateEngine;
 
     @Override
     public void sendEmail() {
@@ -59,13 +63,42 @@ public class EmailSenderServiceImpl implements EmailSenderService {
     }
 
     @Override
-    public void sendInvitationEmail(String recipientEmail, String recipientFirstName, String inviterName, String invitationToken, String role, String companyName, Map<String, Object> metadata) {
+    @SneakyThrows
+    public void sendInvitationEmail(String recipientEmail,
+                                    String recipientFirstName,
+                                    String inviterName,
+                                    String invitationToken,
+                                    String role,
+                                    String companyName,
+                                    Map<String, Object> metadata) {
 
+        Context context = new Context();
+        context.setVariable("recipientFirstName", recipientFirstName);
+        context.setVariable("verificationToken", invitationToken);
+        String htmlContent = templateEngine.process("email-verification", context);
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setFrom("noreply@myapp.com");
+        helper.setTo(recipientEmail);
+        helper.setSubject("Verify your email");
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
     }
 
     @Override
-    public void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken) {
-
+    @SneakyThrows
+    public void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken, String companyName) {
+        Context context = new Context();
+        context.setVariable("recipientFirstName", recipientFirstName);
+        context.setVariable("verificationToken", verificationToken);
+        String htmlContent = templateEngine.process("verification", context);
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setFrom("noreply@myapp.com");
+        helper.setTo(recipientEmail);
+        helper.setSubject("Verify your email");
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
     }
 
     @Override

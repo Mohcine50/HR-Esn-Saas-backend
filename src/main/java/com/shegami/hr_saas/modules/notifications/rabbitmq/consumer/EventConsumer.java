@@ -100,14 +100,15 @@ public class EventConsumer {
                 message.getRecipientEmail(), message.getVerificationType());
 
         try {
-            if ("EMAIL_VERIFICATION".equals(message.getVerificationType())) {
-                emailService.sendEmailVerification(
+
+            switch (message.getVerificationType()){
+                case EMAIL_VERIFICATION -> emailService.sendEmailVerification(
                         message.getRecipientEmail(),
                         message.getRecipientFirstName(),
-                        message.getVerificationToken()
+                        message.getVerificationToken(),
+                        message.getCompanyName()
                 );
-            } else if ("PASSWORD_RESET".equals(message.getVerificationType())) {
-                emailService.sendPasswordResetEmail(
+                case PASSWORD_RESET -> emailService.sendPasswordResetEmail(
                         message.getRecipientEmail(),
                         message.getRecipientFirstName(),
                         message.getVerificationToken()
