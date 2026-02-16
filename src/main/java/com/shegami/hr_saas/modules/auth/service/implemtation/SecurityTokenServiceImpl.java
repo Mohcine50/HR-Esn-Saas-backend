@@ -1,10 +1,12 @@
 package com.shegami.hr_saas.modules.auth.service.implemtation;
 
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
+import com.shegami.hr_saas.modules.auth.dto.SecurityTokenDto;
 import com.shegami.hr_saas.modules.auth.entity.SecurityToken;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
+import com.shegami.hr_saas.modules.auth.mapper.SecurityTokenMapper;
 import com.shegami.hr_saas.modules.auth.repository.SecurityTokenRepository;
 import com.shegami.hr_saas.modules.auth.repository.TenantRepository;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
@@ -24,6 +26,7 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
     private final SecurityTokenRepository securityTokenRepository;
     private final UserService userService;
     private final TenantService tenantService;
+    private final SecurityTokenMapper securityTokenMapper;
 
     @Override
     public void deleteToken(String token) {
@@ -32,12 +35,14 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
     }
 
     @Override
-    public void createToken(SecurityToken securityToken) {
-        log.info("createToken for user: {}", securityToken.getUser().getUserId());
+    public void createToken(SecurityTokenDto securityTokenDto) {
+        log.info("createToken: {}", securityTokenDto.getToken());
 
-        Tenant tenant = tenantService.getTenant(UserContextHolder.getCurrentUserContext().tenantId());
+        Tenant tenant = tenantService.getTenant(securityTokenDto.getTenantId());
 
-        User user = userService.findUserByUserId(UserContextHolder.getCurrentUserContext().userId()).orElseThrow(()->new UserNotFoundException("User not found"));
+        User user = userService.findUserByUserId(securityTokenDto.getUserId()).orElseThrow(()->new UserNotFoundException("User not found"));
+
+        SecurityToken securityToken = securityTokenMapper.toEntity(securityTokenDto);
 
         securityToken.setUser(user);
         securityToken.setTenant(tenant);

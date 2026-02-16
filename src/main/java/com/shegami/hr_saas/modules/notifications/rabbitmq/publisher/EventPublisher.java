@@ -1,6 +1,8 @@
 package com.shegami.hr_saas.modules.notifications.rabbitmq.publisher;
 
 import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
+import com.shegami.hr_saas.modules.auth.entity.SecurityToken;
+import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
 import com.shegami.hr_saas.modules.notifications.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,7 @@ import java.util.UUID;
 public class EventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
+    private final SecurityTokenService securityTokenService;
 
     public void publishNotification(NotificationMessage message) {
         try {

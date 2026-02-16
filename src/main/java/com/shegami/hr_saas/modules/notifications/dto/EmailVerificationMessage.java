@@ -18,4 +18,5 @@ public class EmailVerificationMessage extends BaseMessage {
     private String verificationToken;
     private VerificationType verificationType;
     private String companyName;
+    private String tenantId;
 }

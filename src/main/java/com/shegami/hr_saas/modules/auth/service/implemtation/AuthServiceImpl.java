@@ -1,5 +1,6 @@
 package com.shegami.hr_saas.modules.auth.service.implemtation;
 
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
@@ -16,6 +17,8 @@ import com.shegami.hr_saas.modules.auth.service.UserService;
 import com.shegami.hr_saas.modules.notifications.dto.EmailVerificationMessage;
 import com.shegami.hr_saas.modules.notifications.enums.VerificationType;
 import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
+import com.shegami.hr_saas.shared.model.UserContext;
+import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
@@ -84,15 +87,19 @@ public class AuthServiceImpl implements AuthService {
                 .phoneNumber(registerDto.getPhone())
                 .build(), tenant);
 
+        String jwtAccessToken = AuthUser(registerDto.getEmail(), registerDto.getPassword());
+
+
         eventPublisher.publishVerificationEmail(EmailVerificationMessage.builder()
                         .recipientEmail(registerDto.getEmail())
                         .recipientFirstName(registerDto.getFirstName())
                         .verificationType(VerificationType.EMAIL_VERIFICATION)
                         .userId(createdUser.getUserId())
+                        .verificationToken(TokenGenerator.generateToken())
                         .companyName(registerDto.getCompanyName())
+                        .tenantId(createdUser.getTenant().getTenantId())
                 .build());
 
-        String jwtAccessToken = AuthUser(registerDto.getEmail(), registerDto.getPassword());
         return new RegisterResponseDto(jwtAccessToken, "REGISTER SUCCESSFULLY");
     }
 
@@ -122,8 +129,9 @@ public class AuthServiceImpl implements AuthService {
 
         Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSet));
 
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password, authorities));
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password, authorities));
 
+        UserContextHolder.setCurrentUserContext(new UserContext(user.getUserId(), user.getTenant().getTenantId(), user.getEmail()));
 
         return jwt.getTokenValue();
     }

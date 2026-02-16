@@ -1,13 +1,20 @@
 package com.shegami.hr_saas.modules.notifications.rabbitmq.consumer;
 
 import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
+import com.shegami.hr_saas.modules.auth.dto.SecurityTokenDto;
+import com.shegami.hr_saas.modules.auth.entity.SecurityToken;
+import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
 import com.shegami.hr_saas.modules.notifications.dto.*;
 import com.shegami.hr_saas.modules.notifications.service.EmailSenderService;
 import com.shegami.hr_saas.modules.notifications.service.NotificationService;
+import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 
 import static com.shegami.hr_saas.shared.constants.EmailConstant.QUEUE_NAME;
 
@@ -18,6 +25,10 @@ public class EventConsumer {
 
     private final NotificationService notificationService;
     private final EmailSenderService emailService;
+    private final SecurityTokenService securityTokenService;
+
+    @Value("${app.base-url}")
+    private String URL;
 
     // ==================== IN-APP NOTIFICATIONS ====================
 
@@ -99,20 +110,33 @@ public class EventConsumer {
         log.info("Consuming verification email message for: {} (type: {})",
                 message.getRecipientEmail(), message.getVerificationType());
 
+        securityTokenService.createToken(SecurityTokenDto.builder()
+                        .token(TokenGenerator.encryptToken(message.getVerificationToken()))
+                        .expiresAt(LocalDateTime.now().plusDays(1))
+                        .tenantId(message.getTenantId())
+                        .userId(message.getUserId())
+                .build());
+
         try {
 
             switch (message.getVerificationType()){
-                case EMAIL_VERIFICATION -> emailService.sendEmailVerification(
-                        message.getRecipientEmail(),
-                        message.getRecipientFirstName(),
-                        message.getVerificationToken(),
-                        message.getCompanyName()
-                );
-                case PASSWORD_RESET -> emailService.sendPasswordResetEmail(
-                        message.getRecipientEmail(),
-                        message.getRecipientFirstName(),
-                        message.getVerificationToken()
-                );
+                case EMAIL_VERIFICATION -> {
+                    String verificationLink = String.format("%s/verify?token=%s", URL, message.getVerificationToken());
+                    emailService.sendEmailVerification(
+                            message.getRecipientEmail(),
+                            message.getRecipientFirstName(),
+                            verificationLink,
+                            message.getCompanyName()
+                    );
+                }
+                case PASSWORD_RESET -> {
+                    String resetLink = String.format("%s/reset-password?token=%s", URL, message.getVerificationToken());
+                    emailService.sendPasswordResetEmail(
+                            message.getRecipientEmail(),
+                            message.getRecipientFirstName(),
+                            resetLink
+                    );
+                }
             }
 
             log.info("Verification email sent successfully to: {}", message.getRecipientEmail());
