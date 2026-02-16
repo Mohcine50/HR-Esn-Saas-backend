@@ -37,6 +37,8 @@ import static com.shegami.hr_saas.shared.util.RequestHandler.writeResponse;
 @Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
+    private static final Set<String> PUBLIC_ENDPOINTS = Set.of( "/api/auth/login", "/api/auth/signup", "/v3/api-docs", "/swagger-ui/", "/api/invitations/accept", "/api/invitations/validate" );
+
     private final JwtDecoder jwtDecoder;
     private final UserDetailsService userDetailsService;
     private final AuthenticationManager authenticationManager;
@@ -52,15 +54,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String jwtToken;
         boolean tokenExpired;
         Instant issuerAt, expiredAt;
-        String requestedURI;
+
         JsonObject jsonObject = new JsonObject();
 
-        requestedURI = request.getRequestURI();
-        String validationRegexForRedirectionUri = "^/[A-Za-z0-9]{8}$";
+        var requestedURI = request.getRequestURI();
 
-        if (requestedURI.contains("/api/auth/login") || requestedURI.contains("/api/auth/signup") || requestedURI.contains("/v3/api-docs") || requestedURI.contains("/swagger-ui/")
-                || (requestedURI.matches(validationRegexForRedirectionUri) && request.getMethod().equals("GET"))) {
-
+        if (isPublicEndpoint(requestedURI)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -129,6 +128,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             UserContextHolder.clearCurrentUserContext();
         }
 
+    }
+
+    private boolean isPublicEndpoint(String uri) {
+        return PUBLIC_ENDPOINTS.stream().anyMatch(uri::contains);
     }
 
 }

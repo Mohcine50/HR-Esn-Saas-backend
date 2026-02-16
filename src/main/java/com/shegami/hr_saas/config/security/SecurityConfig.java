@@ -39,8 +39,9 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/signup").permitAll()
-                        .requestMatchers(antMatcher("/v3/api-docs/**")).permitAll()
-                        .requestMatchers(antMatcher("/swagger-ui/**")).permitAll()
+                        .requestMatchers("/api/invitations/accept", "/api/invitations/validate").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
