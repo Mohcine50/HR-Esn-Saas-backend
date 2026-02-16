@@ -4,6 +4,7 @@ import com.shegami.hr_saas.modules.hr.dto.InvitationDto;
 import com.shegami.hr_saas.modules.hr.entity.Invitation;
 import com.shegami.hr_saas.modules.hr.service.InvitationService;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

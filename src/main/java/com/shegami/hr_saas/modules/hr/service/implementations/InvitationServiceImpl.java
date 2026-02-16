@@ -47,7 +47,8 @@ public class InvitationServiceImpl implements InvitationService {
     private final InvitationMapper invitationMapper;
     private final EmailSenderService emailService;
     private final TenantService tenantService;
-    @Value("${app.invitation.expiry-days:7}")
+
+    @Value("${app.invitation.expiry-days}")
     private int invitationExpiryDays;
 
     @Value("${app.base-url}")

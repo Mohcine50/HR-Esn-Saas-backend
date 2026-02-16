@@ -20,7 +20,7 @@ import com.shegami.hr_saas.modules.hr.mapper.EmployeeMapper;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
 import com.shegami.hr_saas.modules.hr.service.EmployeeService;
 import com.shegami.hr_saas.modules.notifications.dto.VerificationEmailEventDto;
-import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EmailEventPublisher;
+import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
 import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +49,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final EmployeeMapper employeeMapper;
 
-    private final EmailEventPublisher emailEventPublisher;
+    private final EventPublisher emailEventPublisher;
 
 
     @Override

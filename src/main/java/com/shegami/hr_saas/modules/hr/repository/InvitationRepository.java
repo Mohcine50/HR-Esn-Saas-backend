@@ -38,7 +38,7 @@ public interface InvitationRepository extends JpaRepository<Invitation, String> 
     );
 
     // Count pending invitations
-    Long countByTenantIdAndStatus(String tenantId, InvitationStatus status);
+    Long countByTenantTenantIdAndStatus(String tenantId, InvitationStatus status);
 
     // Find expired invitations
     @Query("SELECT i FROM Invitation i " +
@@ -47,7 +47,7 @@ public interface InvitationRepository extends JpaRepository<Invitation, String> 
     List<Invitation> findExpiredInvitations(@Param("expiryDate") LocalDateTime expiryDate);
 
     // Check if email has pending invitation
-    boolean existsByEnviteeEmailAndTenantIdAndStatus(
+    boolean existsByEnviteeEmailAndTenantTenantIdAndStatus(
             String email,
             String tenantId,
             InvitationStatus status
