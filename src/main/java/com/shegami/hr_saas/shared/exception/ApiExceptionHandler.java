@@ -1,9 +1,6 @@
 package com.shegami.hr_saas.shared.exception;
 
-import com.shegami.hr_saas.modules.auth.exception.TenantNotFoundException;
-import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
-import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
-import com.shegami.hr_saas.modules.auth.exception.UserRoleNotFoundException;
+import com.shegami.hr_saas.modules.auth.exception.*;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeAlreadyExistException;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
 import com.shegami.hr_saas.modules.hr.exception.InvitationExpiredException;
@@ -123,6 +120,22 @@ public class ApiExceptionHandler {
         ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
 
         return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = InvalidTokenException.class)
+    public ResponseEntity<Object> handleInvalidToken(InvalidTokenException invalidTokenException) {
+
+        ApiException apiException = new ApiException(invalidTokenException.getMessage(), HttpStatus.FORBIDDEN, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(value = TokenExpiredException.class)
+    public ResponseEntity<Object> handleExpiredToken(TokenExpiredException tokenExpiredException) {
+
+        ApiException apiException = new ApiException(tokenExpiredException.getMessage(), HttpStatus.FORBIDDEN, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.FORBIDDEN);
     }
 
     private Map<String, List<String>> getErrorsMap(List<String> errors) {
