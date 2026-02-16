@@ -12,6 +12,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +58,25 @@ public class EmailSenderServiceImpl implements EmailSenderService {
         mailSender.send(message);
     }
 
+    @Override
+    public void sendInvitationEmail(String recipientEmail, String recipientFirstName, String inviterName, String invitationToken, String role, String companyName, Map<String, Object> metadata) {
 
+    }
+
+    @Override
+    public void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken) {
+
+    }
+
+    @Override
+    public void sendPasswordResetEmail(String recipientEmail, String recipientFirstName, String verificationToken) {
+
+    }
+
+    @Override
+    public void sendSecurityAlertEmail(String recipientEmail, String recipientFirstName, Map<String, Object> context) {
+
+    }
 
 
 }

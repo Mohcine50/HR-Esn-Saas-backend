@@ -6,7 +6,10 @@ import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
 import com.shegami.hr_saas.modules.notifications.enums.NotificationStatus;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -20,7 +23,6 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Notification extends BaseTenantEntity {
 
     @Id

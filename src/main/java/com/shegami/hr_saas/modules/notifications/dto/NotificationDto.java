@@ -35,6 +35,6 @@ public class NotificationDto implements Serializable {
     Boolean sentInApp;
     Boolean sentViaEmail;
     LocalDateTime emailSentAt;
-    Map<Map<String, Object>> metadata;
+    Map<String, Object> metadata;
     String actionUrl;
 }
