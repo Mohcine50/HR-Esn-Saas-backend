@@ -3,6 +3,7 @@ package com.shegami.hr_saas.modules.auth.controller;
 
 import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
+import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -24,8 +25,8 @@ import static com.shegami.hr_saas.modules.auth.utils.AuthUtils.setAccessTokenCoo
 @Slf4j
 public class AuthController {
 
-    public final AuthService authService;
-
+    private final AuthService authService;
+    private final SecurityTokenService securityTokenService;
 
     @PostMapping("login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto,HttpServletResponse response) {
@@ -71,6 +72,16 @@ public class AuthController {
     @PostMapping("refresh")
     public ResponseEntity<Object> refresh(RefreshDto refreshDto){
         return null;
+    }
+
+
+    @GetMapping("/verify")
+    public ResponseEntity<Map<String, Object>> verifyAccount(@RequestParam String token) {
+        boolean valid = securityTokenService.verifyAccount(token);
+        return ResponseEntity.ok(Map.of(
+                "verified", valid,
+                "message", valid ? "VERIFIED" : "INVALID_OR_EXPIRED"
+        ));
     }
 
 }

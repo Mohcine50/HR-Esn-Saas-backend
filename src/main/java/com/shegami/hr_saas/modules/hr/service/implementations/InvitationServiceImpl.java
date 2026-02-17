@@ -20,6 +20,7 @@ import com.shegami.hr_saas.modules.hr.repository.InvitationRepository;
 import com.shegami.hr_saas.modules.hr.service.InvitationService;
 import com.shegami.hr_saas.modules.notifications.service.EmailSenderService;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
+import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -100,8 +101,8 @@ public class InvitationServiceImpl implements InvitationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
 
         // Generate secure token
-        String token = generateSecureToken();
-        String tokenHash = hashToken(token);
+        String token = TokenGenerator.generateToken();
+        String tokenHash = TokenGenerator.encryptToken(token);
 
         // Create invitation
         Invitation invitation = new Invitation();
@@ -245,7 +246,7 @@ public class InvitationServiceImpl implements InvitationService {
         log.info("Validating invitation token");
 
         try {
-            String tokenHash = hashToken(token);
+            String tokenHash = TokenGenerator.encryptToken(token);
 
             Invitation invitation = invitationRepository
                     .findByInvitationToken(tokenHash)
@@ -281,7 +282,7 @@ public class InvitationServiceImpl implements InvitationService {
         // Validate token first
         validateInvitation(token);
 
-        String tokenHash = hashToken(token);
+        String tokenHash = TokenGenerator.encryptToken(token);
         Invitation invitation = invitationRepository
                 .findByInvitationToken(tokenHash)
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
@@ -370,22 +371,6 @@ public class InvitationServiceImpl implements InvitationService {
         log.info("Created employee record for user: {}", user.getEmail());
     }
 
-    private String generateSecureToken() {
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private String hashToken(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to hash token", e);
-        }
-    }
 
     private boolean isValidEmail(String email) {
         if (email == null || email.isEmpty()) {

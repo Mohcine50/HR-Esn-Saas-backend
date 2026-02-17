@@ -130,13 +130,30 @@ public class ApiExceptionHandler {
         return new ResponseEntity<>(apiException, HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(value = TokenNotFoundException.class)
+    public ResponseEntity<Object> handleTokenNotFound(TokenNotFoundException tokenNotFoundException) {
+
+        ApiException apiException = new ApiException(tokenNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(value = TokenExpiredException.class)
     public ResponseEntity<Object> handleExpiredToken(TokenExpiredException tokenExpiredException) {
 
-        ApiException apiException = new ApiException(tokenExpiredException.getMessage(), HttpStatus.FORBIDDEN, new Date());
+        ApiException apiException = new ApiException(tokenExpiredException.getMessage(), HttpStatus.GONE, new Date());
 
-        return new ResponseEntity<>(apiException, HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(apiException, HttpStatus.GONE);
     }
+
+    @ExceptionHandler(value = UserAlreadyVerified.class)
+    public ResponseEntity<Object> handelUserAlreadyVerified(UserAlreadyVerified userAlreadyVerified) {
+
+        ApiException apiException = new ApiException(userAlreadyVerified.getMessage(), HttpStatus.CONFLICT, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.CONFLICT);
+    }
+
 
     private Map<String, List<String>> getErrorsMap(List<String> errors) {
         Map<String, List<String>> errorResponse = new HashMap<>();

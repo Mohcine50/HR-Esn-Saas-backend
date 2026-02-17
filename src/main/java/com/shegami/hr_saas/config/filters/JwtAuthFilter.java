@@ -37,7 +37,7 @@ import static com.shegami.hr_saas.shared.util.RequestHandler.writeResponse;
 @Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private static final Set<String> PUBLIC_ENDPOINTS = Set.of( "/api/auth/login", "/api/auth/signup", "/v3/api-docs", "/swagger-ui/", "/api/invitations/accept", "/api/invitations/validate" );
+    private static final Set<String> PUBLIC_ENDPOINTS = Set.of( "/api/auth/verify", "/api/auth/login", "/api/auth/signup", "/v3/api-docs", "/swagger-ui/", "/api/invitations/accept", "/api/invitations/validate" );
 
     private final JwtDecoder jwtDecoder;
     private final UserDetailsService userDetailsService;

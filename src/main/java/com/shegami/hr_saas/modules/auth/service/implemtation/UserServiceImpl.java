@@ -68,7 +68,7 @@ public class UserServiceImpl implements UserService {
         newUser.setLastName(userDto.getLastName());
         newUser.setTenant(tenant);
         newUser.setPhoneNumber(userDto.getPhoneNumber());
-        newUser.setStatus(UserStatus.ACTIVE);
+        newUser.setStatus(UserStatus.PENDING);
         newUser.setUserSettings(userSettings);
         newUser.setRoles(new ArrayList<>(List.of(userRole)));
 
