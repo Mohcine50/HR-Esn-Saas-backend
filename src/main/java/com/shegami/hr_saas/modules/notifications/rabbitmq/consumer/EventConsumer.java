@@ -71,6 +71,7 @@ public class EventConsumer {
     @RabbitListener(queues = RabbitMQConfig.EMAIL_INVITATION_QUEUE)
     public void consumeInvitationEmail(EmailInvitationMessage message) {
         log.info("Consuming invitation email message for: {}", message.getRecipientEmail());
+        String invitationLink = String.format("%s/accept-invitation?token=%s", URL, message.getInvitationToken());
 
         try {
             // Send invitation email
@@ -78,7 +79,7 @@ public class EventConsumer {
                     message.getRecipientEmail(),
                     message.getRecipientFirstName(),
                     message.getInviterName(),
-                    message.getInvitationToken(),
+                    invitationLink,
                     message.getRole(),
                     message.getCompanyName(),
                     message.getMetadata()
