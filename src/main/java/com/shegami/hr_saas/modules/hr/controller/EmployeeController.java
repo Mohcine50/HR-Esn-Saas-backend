@@ -39,6 +39,11 @@ public class EmployeeController {
     }
 
 
+    @PostMapping("/invite")
+    public ResponseEntity<EmployeeDto> invite(@Valid @RequestBody InvitationRequestDto inviteDto) {
+        EmployeeDto created = employeeService.addNewEmployee(inviteDto);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    }
 
     @GetMapping("/stats/count-by-contract")
     public ResponseEntity<List<EmployeesCountByContract>> getCountByContract() {

@@ -95,7 +95,4 @@ public class EventPublisher {
             throw new RuntimeException("Failed to publish critical email", e);
         }
     }
-
-    public void sendInvitationEmail(VerificationEmailEventDto build) {
-    }
 }

@@ -45,10 +45,6 @@ public class Invitation extends BaseTenantEntity {
      private InvitationType invitationType;
 
 
-    @Enumerated(EnumType.STRING)
-    private UserRoles userRole;
-
-
     @PrePersist
     public void generateInvitationId() {
         if (this.invitationId == null) {

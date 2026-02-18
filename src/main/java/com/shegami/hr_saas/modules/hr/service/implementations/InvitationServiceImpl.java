@@ -57,6 +57,8 @@ public class InvitationServiceImpl implements InvitationService {
     private final PasswordEncoder passwordEncoder;
     private final UserRoleService userRoleService;
     private final UserSettingsRepository userSettingsRepository;
+
+
     @Value("${app.invitation.expiry-days}")
     private int invitationExpiryDays;
 
@@ -67,89 +69,12 @@ public class InvitationServiceImpl implements InvitationService {
     public InvitationDto createInvitation(InvitationRequestDto invitationDto) {
         log.info("Creating invitation for email: {}", invitationDto.getEmail());
 
-        // Get current user context
-        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        String currentUserId = UserContextHolder.getCurrentUserContext().userId();
-
-        Tenant tenant = tenantService.getTenant(tenantId);
-
-        // Validate email format
-        if (!isValidEmail(invitationDto.getEmail())) {
-            throw new IllegalArgumentException("Invalid email format");
-        }
-
-        // Check if user already exists
-        if (userRepository.existsByEmail(invitationDto.getEmail())) {
-            throw new UserAlreadyExistException("User with email " + invitationDto.getEmail() + " already exists");
-        }
 
 
 
-        // Check for existing pending invitation
-        Optional<Invitation> existingInvitation = invitationRepository
-                .findByInviteeEmailAndTenantTenantIdAndStatus(
-                        invitationDto.getEmail(),
-                        tenantId,
-                        InvitationStatus.PENDING
-                );
 
-        if (existingInvitation.isPresent()) {
-            Invitation existing = existingInvitation.get();
-            if (existing.getInvitedAt().plusDays(invitationExpiryDays).isAfter(LocalDateTime.now())) {
-                throw new UserAlreadyExistException("Active invitation already exists for this email");
-            } else {
-                // Expire old invitation
-                existing.setStatus(InvitationStatus.EXPIRED);
-                invitationRepository.save(existing);
-            }
-        }
 
-        // Get inviter
-        User inviter = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
-
-        // Generate secure token
-        String token = TokenGenerator.generateToken();
-        String tokenHash = TokenGenerator.encryptToken(token);
-
-        // Create invitation
-        Invitation invitation = new Invitation();
-        invitation.setInvitationToken(tokenHash);
-        invitation.setUserRole(UserRoles.valueOf(invitationDto.getRoleName()));
-        invitation.setStatus(InvitationStatus.PENDING);
-        invitation.setInvitedAt(LocalDateTime.now());
-        invitation.setInviter(inviter);
-        invitation.setTenant(tenant);
-        invitation.setInvitationType(InvitationType.EMPLOYEE);
-
-        Invitation savedInvitation = invitationRepository.save(invitation);
-        log.info("Invitation created with ID: {}", savedInvitation.getInvitationId());
-
-        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.MANAGER);
-
-        UserSettings userSettings = userSettingsRepository.save(new UserSettings());
-        // Create pending user
-        User invitee = createPendingUser(savedInvitation, invitationDto, userRole);
-        invitation.setInvitee(invitee);
-
-        invitee.setUserSettings(userSettings);
-
-        // Build invitation link
-        String invitationLink = String.format("%s/accept-invitation?token=%s", baseUrl, token);
-
-        // Send invitation email
-        try {
-            emailService.sendInvitationEmail(
-                    invitationDto.getEmail(),
-                    invitationLink
-            );
-            log.info("Invitation email sent to: {}", invitationDto.getEmail());
-        } catch (Exception e) {
-            log.error("Failed to send invitation email", e);
-            // Don't fail the entire operation if email fails
-        }
-
-        return invitationMapper.toDto(savedInvitation);
+        return null;
     }
 
     @Override
@@ -187,11 +112,6 @@ public class InvitationServiceImpl implements InvitationService {
 
         if (invitation.getStatus() != InvitationStatus.PENDING) {
             throw new IllegalStateException("Cannot update non-pending invitation");
-        }
-
-        // Update fields
-        if (invitationDto.getUserRole() != null) {
-            invitation.setUserRole(invitationDto.getUserRole());
         }
 
         invitationRepository.save(invitation);
@@ -329,9 +249,6 @@ public class InvitationServiceImpl implements InvitationService {
         invitation.setAcceptedAt(LocalDateTime.now());
         invitationRepository.save(invitation);
 
-        if (invitation.getInvitationType() == InvitationType.EMPLOYEE){
-            createEmployeeRecord(user);
-        }
         log.info("Invitation accepted for user: {}", user.getEmail());
         return true;
     }

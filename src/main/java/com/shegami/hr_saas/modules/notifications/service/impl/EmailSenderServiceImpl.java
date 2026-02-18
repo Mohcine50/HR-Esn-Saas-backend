@@ -75,7 +75,7 @@ public class EmailSenderServiceImpl implements EmailSenderService {
         Context context = new Context();
         context.setVariable("recipientFirstName", recipientFirstName);
         context.setVariable("verificationToken", invitationToken);
-        String htmlContent = templateEngine.process("email-verification", context);
+        String htmlContent = templateEngine.process("verification", context);
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         helper.setFrom("noreply@myapp.com");
