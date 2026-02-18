@@ -1,7 +1,6 @@
 package com.shegami.hr_saas.modules.mission.mapper;
 
 import com.shegami.hr_saas.modules.auth.mapper.TenantMapper;
-import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.mission.dto.MissionDto;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import org.mapstruct.*;

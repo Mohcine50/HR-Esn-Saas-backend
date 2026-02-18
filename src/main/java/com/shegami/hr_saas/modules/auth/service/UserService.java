@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.auth.service;
 
-import com.shegami.hr_saas.modules.auth.dto.RegisterDto;
 import com.shegami.hr_saas.modules.auth.dto.UserDto;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;

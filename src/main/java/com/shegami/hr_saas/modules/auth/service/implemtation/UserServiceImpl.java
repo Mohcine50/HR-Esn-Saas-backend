@@ -1,7 +1,6 @@
 package com.shegami.hr_saas.modules.auth.service.implemtation;
 
 
-import com.shegami.hr_saas.modules.auth.dto.RegisterDto;
 import com.shegami.hr_saas.modules.auth.dto.UserDto;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
@@ -15,8 +14,6 @@ import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.repository.UserSettingsRepository;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
-import com.shegami.hr_saas.shared.exception.ApiRequestException;
-import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

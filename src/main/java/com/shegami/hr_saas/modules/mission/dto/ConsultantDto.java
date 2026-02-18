@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.mission.dto;
 
-import com.shegami.hr_saas.modules.auth.dto.TenantDto;
 import com.shegami.hr_saas.modules.auth.dto.UserDto;
 import com.shegami.hr_saas.modules.mission.enums.ConsultantLevel;
 import com.shegami.hr_saas.modules.mission.enums.ConsultantStatus;
