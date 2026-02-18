@@ -5,6 +5,7 @@ import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.hr.enums.InvitationStatus;
+import com.shegami.hr_saas.modules.hr.enums.InvitationType;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -40,6 +41,8 @@ public class Invitation extends BaseTenantEntity {
      private User inviter;
 
 
+     @Enumerated(EnumType.STRING)
+     private InvitationType invitationType;
 
 
     @Enumerated(EnumType.STRING)

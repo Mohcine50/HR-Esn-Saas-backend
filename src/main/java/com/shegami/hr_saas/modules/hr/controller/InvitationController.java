@@ -1,5 +1,6 @@
 package com.shegami.hr_saas.modules.hr.controller;
 
+import com.shegami.hr_saas.modules.hr.dto.AcceptInvitationDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationValidationResponse;
@@ -93,8 +94,8 @@ public class InvitationController {
 
 
     @PostMapping("/accept")
-    public ResponseEntity<Map<String, Object>> acceptInvitation(@RequestParam String token) {
-        boolean accepted = invitationService.acceptInvitation(token);
+    public ResponseEntity<Map<String, Object>> acceptInvitation(@RequestParam String token, @Valid @RequestBody AcceptInvitationDto acceptInvitationDto) {
+        boolean accepted = invitationService.acceptInvitation(token, acceptInvitationDto);
         return ResponseEntity.ok(Map.of(
                 "success", accepted,
                 "message", "Invitation accepted successfully"

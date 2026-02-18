@@ -52,6 +52,23 @@ public class ApiExceptionHandler {
 
         return new ResponseEntity<>(apiException, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+
+    @ExceptionHandler(value = PasswordMismatchException.class)
+    public ResponseEntity<Object> handlePasswordMismatch(PasswordMismatchException passwordMismatchException) {
+
+        ApiException apiException = new ApiException(passwordMismatchException.getMessage(), HttpStatus.BAD_REQUEST, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = InvitationAlreadyAccepted.class)
+    public ResponseEntity<Object> handelInvitationAlreadyAccepted(InvitationAlreadyAccepted invitationAlreadyAccepted) {
+
+        ApiException apiException = new ApiException(invitationAlreadyAccepted.getMessage(), HttpStatus.ACCEPTED, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.ACCEPTED);
+    }
+
     @ExceptionHandler(value = ResourceNotFoundException.class)
     public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException resourceNotFoundException) {
 

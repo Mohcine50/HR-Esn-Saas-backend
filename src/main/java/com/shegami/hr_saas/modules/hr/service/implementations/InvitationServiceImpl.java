@@ -6,28 +6,31 @@ import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
+import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
+import com.shegami.hr_saas.modules.hr.dto.AcceptInvitationDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationValidationResponse;
-import com.shegami.hr_saas.modules.hr.exception.InvalidInvitationException;
-import com.shegami.hr_saas.modules.hr.exception.InvitationNotFoundException;
+import com.shegami.hr_saas.modules.hr.enums.InvitationType;
+import com.shegami.hr_saas.modules.hr.exception.*;
 import com.shegami.hr_saas.modules.hr.mapper.InvitationMapper;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.entity.Invitation;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
 import com.shegami.hr_saas.modules.hr.enums.InvitationStatus;
-import com.shegami.hr_saas.modules.hr.exception.InvitationExpiredException;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
 import com.shegami.hr_saas.modules.hr.repository.InvitationRepository;
 import com.shegami.hr_saas.modules.hr.service.InvitationService;
+import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.notifications.service.EmailSenderService;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
 import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +50,7 @@ public class InvitationServiceImpl implements InvitationService {
     private final InvitationMapper invitationMapper;
     private final EmailSenderService emailService;
     private final TenantService tenantService;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${app.invitation.expiry-days}")
     private int invitationExpiryDays;
@@ -111,6 +115,7 @@ public class InvitationServiceImpl implements InvitationService {
         invitation.setInvitedAt(LocalDateTime.now());
         invitation.setInviter(inviter);
         invitation.setTenant(tenant);
+        invitation.setInvitationType(InvitationType.EMPLOYEE);
 
         Invitation savedInvitation = invitationRepository.save(invitation);
         log.info("Invitation created with ID: {}", savedInvitation.getInvitationId());
@@ -251,10 +256,11 @@ public class InvitationServiceImpl implements InvitationService {
                     .findByInvitationToken(tokenHash)
                     .orElseThrow(() -> new InvitationNotFoundException("Invalid invitation token"));
 
-            // Check status
-            if (invitation.getStatus() != InvitationStatus.PENDING) {
-                log.warn("Invitation is not pending: {}", invitation.getStatus());
-                throw new InvalidInvitationException("Invalid invitation");
+
+            switch (invitation.getStatus()){
+                case EXPIRED -> throw new InvitationExpiredException("Invitation has expired");
+                case ACCEPTED -> throw new InvitationAlreadyAccepted("Invitation already accepted");
+                case REVOKED, REJECTED -> throw new InvalidInvitationException("Invalid invitation status");
             }
 
             // Check expiration
@@ -278,8 +284,12 @@ public class InvitationServiceImpl implements InvitationService {
     }
 
     @Override
-    public boolean acceptInvitation(String token) {
+    public boolean acceptInvitation(String token, AcceptInvitationDto acceptInvitationDto) {
         log.info("Accepting invitation");
+
+        if (!acceptInvitationDto.getPassword().equals(acceptInvitationDto.getConfirmPassword())) {
+            throw new PasswordMismatchException("Passwords do not match");
+        }
 
         // Validate token first
         validateInvitation(token);
@@ -287,19 +297,19 @@ public class InvitationServiceImpl implements InvitationService {
         String tokenHash = TokenGenerator.encryptToken(token);
         Invitation invitation = invitationRepository
                 .findByInvitationToken(tokenHash)
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(() -> new InvitationNotFoundException("Invitation not found"));
 
         // Find pending user
         User user = userRepository
                 .findByEmail(invitation.getInvitee().getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Pending user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Pending user not found"));
 
         if (!user.isPending()) {
             throw new IllegalStateException("User is not in pending state");
         }
 
-        // Activate user (password should be set separately via /set-password endpoint)
         user.setPending(false);
+        user.setPassword(passwordEncoder.encode(acceptInvitationDto.getPassword()));
         user.setStatus(UserStatus.ACTIVE);
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setIsEmailVerified(true);
@@ -310,10 +320,11 @@ public class InvitationServiceImpl implements InvitationService {
         invitation.setAcceptedAt(LocalDateTime.now());
         invitationRepository.save(invitation);
 
-        // Create employee record if role is EMPLOYEE
-        if (invitation.getUserRole() == UserRoles.EMPLOYEE) {
+        if (invitation.getInvitationType() == InvitationType.EMPLOYEE){
             createEmployeeRecord(user);
         }
+
+
 
         log.info("Invitation accepted for user: {}", user.getEmail());
         return true;
