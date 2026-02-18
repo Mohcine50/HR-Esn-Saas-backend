@@ -1,11 +1,9 @@
 package com.shegami.hr_saas.modules.hr.controller;
 
 
-import com.shegami.hr_saas.modules.auth.dto.InviteDto;
 import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
 import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
-import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
-import com.shegami.hr_saas.modules.hr.entity.Employee;
+import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
 import com.shegami.hr_saas.modules.hr.service.EmployeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,12 +39,6 @@ public class EmployeeController {
     }
 
 
-    @PostMapping("/invite")
-    public ResponseEntity<EmployeeDto> invite(@Valid @RequestBody InviteEmployeeDto inviteDto) {
-        // Return the created object, not the password
-        EmployeeDto created = employeeService.AddNewEmployee(inviteDto);
-        return new ResponseEntity<>(created, HttpStatus.CREATED);
-    }
 
     @GetMapping("/stats/count-by-contract")
     public ResponseEntity<List<EmployeesCountByContract>> getCountByContract() {

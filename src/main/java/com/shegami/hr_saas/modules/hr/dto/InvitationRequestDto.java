@@ -12,7 +12,7 @@ import java.io.Serializable;
  * DTO for {@link com.shegami.hr_saas.modules.hr.entity.Employee}
  */
 @Value
-public class InviteEmployeeDto implements Serializable {
+public class InvitationRequestDto implements Serializable {
 
     @NotNull
     @NotEmpty

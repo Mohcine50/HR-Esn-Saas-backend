@@ -9,6 +9,10 @@ import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.hr.dto.InvitationDto;
+import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
+import com.shegami.hr_saas.modules.hr.dto.InvitationValidationResponse;
+import com.shegami.hr_saas.modules.hr.exception.InvalidInvitationException;
+import com.shegami.hr_saas.modules.hr.exception.InvitationNotFoundException;
 import com.shegami.hr_saas.modules.hr.mapper.InvitationMapper;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.entity.Invitation;
@@ -27,12 +31,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,8 +55,8 @@ public class InvitationServiceImpl implements InvitationService {
     private String baseUrl;
 
     @Override
-    public InvitationDto createInvitation(InvitationDto invitationDto) {
-        log.info("Creating invitation for email: {}", invitationDto.getEnviteeEmail());
+    public InvitationDto createInvitation(InvitationRequestDto invitationDto) {
+        log.info("Creating invitation for email: {}", invitationDto.getEmail());
 
         // Get current user context
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
@@ -66,21 +65,21 @@ public class InvitationServiceImpl implements InvitationService {
         Tenant tenant = tenantService.getTenant(tenantId);
 
         // Validate email format
-        if (!isValidEmail(invitationDto.getEnviteeEmail())) {
+        if (!isValidEmail(invitationDto.getEmail())) {
             throw new IllegalArgumentException("Invalid email format");
         }
 
         // Check if user already exists
-        if (userRepository.existsByEmail(invitationDto.getEnviteeEmail())) {
-            throw new UserAlreadyExistException("User with email " + invitationDto.getEnviteeEmail() + " already exists");
+        if (userRepository.existsByEmail(invitationDto.getEmail())) {
+            throw new UserAlreadyExistException("User with email " + invitationDto.getEmail() + " already exists");
         }
 
 
 
         // Check for existing pending invitation
         Optional<Invitation> existingInvitation = invitationRepository
-                .findByEnviteeEmailAndTenantTenantIdAndStatus(
-                        invitationDto.getEnviteeEmail(),
+                .findByInviteeEmailAndTenantTenantIdAndStatus(
+                        invitationDto.getEmail(),
                         tenantId,
                         InvitationStatus.PENDING
                 );
@@ -106,9 +105,8 @@ public class InvitationServiceImpl implements InvitationService {
 
         // Create invitation
         Invitation invitation = new Invitation();
-        invitation.setEnviteeEmail(invitationDto.getEnviteeEmail().toLowerCase());
         invitation.setInvitationToken(tokenHash);
-        invitation.setUserRole(invitationDto.getUserRole());
+        invitation.setUserRole(UserRoles.valueOf(invitationDto.getRoleName()));
         invitation.setStatus(InvitationStatus.PENDING);
         invitation.setInvitedAt(LocalDateTime.now());
         invitation.setInviter(inviter);
@@ -118,7 +116,9 @@ public class InvitationServiceImpl implements InvitationService {
         log.info("Invitation created with ID: {}", savedInvitation.getInvitationId());
 
         // Create pending user
-        createPendingUser(savedInvitation, invitationDto);
+        User invitee = createPendingUser(savedInvitation, invitationDto);
+        invitation.setInvitee(invitee);
+
 
         // Build invitation link
         String invitationLink = String.format("%s/accept-invitation?token=%s", baseUrl, token);
@@ -126,10 +126,10 @@ public class InvitationServiceImpl implements InvitationService {
         // Send invitation email
         try {
             emailService.sendInvitationEmail(
-                    invitationDto.getEnviteeEmail(),
+                    invitationDto.getEmail(),
                     invitationLink
             );
-            log.info("Invitation email sent to: {}", invitationDto.getEnviteeEmail());
+            log.info("Invitation email sent to: {}", invitationDto.getEmail());
         } catch (Exception e) {
             log.error("Failed to send invitation email", e);
             // Don't fail the entire operation if email fails
@@ -187,7 +187,7 @@ public class InvitationServiceImpl implements InvitationService {
     }
 
     @Override
-    public boolean deleteInvitation(String invitationId) {
+    public void deleteInvitation(String invitationId) {
         log.info("Deleting invitation: {}", invitationId);
 
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
@@ -197,7 +197,7 @@ public class InvitationServiceImpl implements InvitationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
 
         // Delete pending user if exists
-        userRepository.findByEmail(invitation.getEnviteeEmail())
+        userRepository.findByEmail(invitation.getInvitee().getEmail())
                 .ifPresent(user -> {
                     if (user.isPending()) {
                         userRepository.delete(user);
@@ -208,7 +208,6 @@ public class InvitationServiceImpl implements InvitationService {
         invitationRepository.delete(invitation);
         log.info("Invitation deleted: {}", invitationId);
 
-        return true;
     }
 
     @Override
@@ -229,7 +228,7 @@ public class InvitationServiceImpl implements InvitationService {
         invitationRepository.save(invitation);
 
         // Delete pending user if exists
-        userRepository.findByEmail(invitation.getEnviteeEmail())
+        userRepository.findByEmail(invitation.getInvitee().getEmail())
                 .ifPresent(user -> {
                     if (user.isPending()) {
                         userRepository.delete(user);
@@ -242,7 +241,7 @@ public class InvitationServiceImpl implements InvitationService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean validateInvitation(String token) {
+    public InvitationValidationResponse validateInvitation(String token) {
         log.info("Validating invitation token");
 
         try {
@@ -250,12 +249,12 @@ public class InvitationServiceImpl implements InvitationService {
 
             Invitation invitation = invitationRepository
                     .findByInvitationToken(tokenHash)
-                    .orElseThrow(() -> new ResourceNotFoundException("Invalid invitation token"));
+                    .orElseThrow(() -> new InvitationNotFoundException("Invalid invitation token"));
 
             // Check status
             if (invitation.getStatus() != InvitationStatus.PENDING) {
                 log.warn("Invitation is not pending: {}", invitation.getStatus());
-                return false;
+                throw new InvalidInvitationException("Invalid invitation");
             }
 
             // Check expiration
@@ -267,7 +266,10 @@ public class InvitationServiceImpl implements InvitationService {
             }
 
             log.info("Invitation validated successfully");
-            return true;
+            return InvitationValidationResponse.builder()
+                    .firstName(invitation.getInvitee().getFirstName())
+                    .tenantName(invitation.getTenant().getName())
+                    .build();
 
         } catch (Exception e) {
             log.error("Token validation failed", e);
@@ -289,7 +291,7 @@ public class InvitationServiceImpl implements InvitationService {
 
         // Find pending user
         User user = userRepository
-                .findByEmail(invitation.getEnviteeEmail())
+                .findByEmail(invitation.getInvitee().getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Pending user not found"));
 
         if (!user.isPending()) {
@@ -333,7 +335,7 @@ public class InvitationServiceImpl implements InvitationService {
         invitationRepository.save(invitation);
 
         // Delete pending user if exists
-        userRepository.findByEmail(invitation.getEnviteeEmail())
+        userRepository.findByEmail(invitation.getInvitee().getEmail())
                 .ifPresent(user -> {
                     if (user.isPending()) {
                         userRepository.delete(user);
@@ -345,9 +347,9 @@ public class InvitationServiceImpl implements InvitationService {
     }
 
     // Private helper methods
-    private void createPendingUser(Invitation invitation, InvitationDto invitationDto) {
+    private User createPendingUser(Invitation invitation, InvitationRequestDto invitationDto) {
         User pendingUser = new User();
-        pendingUser.setEmail(invitation.getEnviteeEmail());
+        pendingUser.setEmail(invitationDto.getEmail());
         pendingUser.setFirstName(invitationDto.getFirstName());
         pendingUser.setLastName(invitationDto.getLastName());
         pendingUser.setPending(true);
@@ -356,8 +358,9 @@ public class InvitationServiceImpl implements InvitationService {
         pendingUser.setCreatedFromInvitation(invitation);
         pendingUser.setTenant(invitation.getTenant());
 
-        userRepository.save(pendingUser);
-        log.info("Created pending user for: {}", invitation.getEnviteeEmail());
+
+        log.info("Created pending user for: {}", invitationDto.getEmail());
+        return userRepository.save(pendingUser);
     }
 
     private void createEmployeeRecord(User user) {

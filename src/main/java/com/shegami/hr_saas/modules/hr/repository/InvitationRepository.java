@@ -15,7 +15,7 @@ public interface InvitationRepository extends JpaRepository<Invitation, String> 
     Optional<Invitation> findByInvitationToken(String invitationToken);
 
     // Find by email and tenant
-    Optional<Invitation> findByEnviteeEmailAndTenantTenantIdAndStatus(
+    Optional<Invitation> findByInviteeEmailAndTenantTenantIdAndStatus(
             String email,
             String tenantId,
             InvitationStatus status
@@ -47,7 +47,7 @@ public interface InvitationRepository extends JpaRepository<Invitation, String> 
     List<Invitation> findExpiredInvitations(@Param("expiryDate") LocalDateTime expiryDate);
 
     // Check if email has pending invitation
-    boolean existsByEnviteeEmailAndTenantTenantIdAndStatus(
+    boolean existsByInviteeEmailAndTenantTenantIdAndStatus(
             String email,
             String tenantId,
             InvitationStatus status

@@ -2,7 +2,7 @@ package com.shegami.hr_saas.modules.hr.service;
 
 import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
 import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
-import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
+import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +18,7 @@ public interface EmployeeService {
     Employee updateEmployee(Employee employee);
     void deleteEmployee(String id);
 
-    EmployeeDto AddNewEmployee(InviteEmployeeDto employee);
+    EmployeeDto AddNewEmployee(InvitationRequestDto employee);
     Page<EmployeeDto> getAllEmployees(Pageable pageable);
 
 

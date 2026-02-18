@@ -23,7 +23,9 @@ public class Invitation extends BaseTenantEntity {
     @Id
     private String invitationId;
 
-    private String enviteeEmail;
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="user_id")
+    private User invitee;
 
     private String invitationToken;
 
@@ -36,6 +38,8 @@ public class Invitation extends BaseTenantEntity {
 
      @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "inviter_id")
      private User inviter;
+
+
 
 
     @Enumerated(EnumType.STRING)

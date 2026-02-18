@@ -1,9 +1,7 @@
 package com.shegami.hr_saas.shared.exception;
 
 import com.shegami.hr_saas.modules.auth.exception.*;
-import com.shegami.hr_saas.modules.hr.exception.EmployeeAlreadyExistException;
-import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
-import com.shegami.hr_saas.modules.hr.exception.InvitationExpiredException;
+import com.shegami.hr_saas.modules.hr.exception.*;
 import com.shegami.hr_saas.modules.upload.exceptions.StorageUploadException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -42,11 +40,18 @@ public class ApiExceptionHandler {
     @ExceptionHandler(value = InvitationExpiredException.class)
     public ResponseEntity<Object> handleInvitationExpiredException(InvitationExpiredException invitationExpiredException) {
 
-        ApiException apiException = new ApiException(invitationExpiredException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+        ApiException apiException = new ApiException(invitationExpiredException.getMessage(), HttpStatus.GONE, new Date());
 
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(apiException, HttpStatus.GONE);
     }
 
+    @ExceptionHandler(value = InvalidInvitationException.class)
+    public ResponseEntity<Object> handleInvalidInvitationException(InvalidInvitationException invitationExpiredException) {
+
+        ApiException apiException = new ApiException(invitationExpiredException.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
     @ExceptionHandler(value = ResourceNotFoundException.class)
     public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException resourceNotFoundException) {
 
@@ -145,6 +150,16 @@ public class ApiExceptionHandler {
 
         return new ResponseEntity<>(apiException, HttpStatus.GONE);
     }
+
+    @ExceptionHandler(value = InvitationNotFoundException.class)
+    public ResponseEntity<Object> handleExpiredToken(InvitationNotFoundException invitationNotFoundException) {
+
+        ApiException apiException = new ApiException(invitationNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+
 
     @ExceptionHandler(value = UserAlreadyVerified.class)
     public ResponseEntity<Object> handelUserAlreadyVerified(UserAlreadyVerified userAlreadyVerified) {

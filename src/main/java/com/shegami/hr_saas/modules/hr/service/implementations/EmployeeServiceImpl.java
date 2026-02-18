@@ -12,7 +12,7 @@ import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
 import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
 import com.shegami.hr_saas.modules.hr.dto.EmployeesCountByContract;
-import com.shegami.hr_saas.modules.hr.dto.InviteEmployeeDto;
+import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
@@ -81,7 +81,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
-    public EmployeeDto AddNewEmployee(InviteEmployeeDto employee) {
+    public EmployeeDto AddNewEmployee(InvitationRequestDto employee) {
         // Get Tenant from db
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
 

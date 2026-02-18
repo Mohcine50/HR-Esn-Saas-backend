@@ -1,6 +1,8 @@
 package com.shegami.hr_saas.modules.hr.controller;
 
 import com.shegami.hr_saas.modules.hr.dto.InvitationDto;
+import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
+import com.shegami.hr_saas.modules.hr.dto.InvitationValidationResponse;
 import com.shegami.hr_saas.modules.hr.entity.Invitation;
 import com.shegami.hr_saas.modules.hr.service.InvitationService;
 import jakarta.validation.Valid;
@@ -24,7 +26,7 @@ public class InvitationController {
 
 
     @PostMapping
-    public ResponseEntity<InvitationDto> createInvitation(@Valid @RequestBody InvitationDto invitationDto) {
+    public ResponseEntity<InvitationDto> createInvitation(@Valid @RequestBody InvitationRequestDto invitationDto) {
         InvitationDto created = invitationService.createInvitation(invitationDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -84,12 +86,9 @@ public class InvitationController {
 
 
     @GetMapping("/validate")
-    public ResponseEntity<Map<String, Object>> validateInvitation(@RequestParam String token) {
-        boolean valid = invitationService.validateInvitation(token);
-        return ResponseEntity.ok(Map.of(
-                "valid", valid,
-                "message", valid ? "Invitation is valid" : "Invalid or expired invitation"
-        ));
+    public ResponseEntity<InvitationValidationResponse> validateInvitation(@RequestParam String token) {
+        InvitationValidationResponse valid = invitationService.validateInvitation(token);
+        return ResponseEntity.ok(valid);
     }
 
 
