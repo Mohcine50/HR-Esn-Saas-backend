@@ -13,8 +13,8 @@ import java.util.List;
 public interface EmployeeRepository extends JpaRepository<Employee, String> {
 
 
-    @Query("SELECT e FROM Employee e WHERE e.tenant.tenantId = :tenant")
-    Page<Employee> findByTenantId(Pageable pageable, @Param("tenant") String tenant);
+    @Query("SELECT e FROM Employee e WHERE e.tenant.tenantId = :tenant and e.user.userId <> :userId")
+    Page<Employee> findByTenantId(Pageable pageable, @Param("tenant") String tenant, @Param("userId") String userId );
 
     @Query("""
         SELECT e.contractType, count(*) AS count\s

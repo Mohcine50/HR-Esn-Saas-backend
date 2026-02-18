@@ -126,7 +126,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Page<EmployeeDto> getAllEmployees(Pageable pageable) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        return employeeRepository.findByTenantId(pageable,tenantId).map(employeeMapper::toDto);
+        String userId = UserContextHolder.getCurrentUserContext().userId();
+        return employeeRepository.findByTenantId(pageable,tenantId, userId).map(employeeMapper::toDto);
     }
 
     @Override
