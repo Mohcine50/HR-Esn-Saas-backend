@@ -3,12 +3,16 @@ package com.shegami.hr_saas.modules.hr.service.implementations;
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
+import com.shegami.hr_saas.modules.auth.entity.UserRole;
+import com.shegami.hr_saas.modules.auth.entity.UserSettings;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
+import com.shegami.hr_saas.modules.auth.repository.UserSettingsRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
+import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.hr.dto.AcceptInvitationDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationDto;
 import com.shegami.hr_saas.modules.hr.dto.InvitationRequestDto;
@@ -51,7 +55,8 @@ public class InvitationServiceImpl implements InvitationService {
     private final EmailSenderService emailService;
     private final TenantService tenantService;
     private final PasswordEncoder passwordEncoder;
-
+    private final UserRoleService userRoleService;
+    private final UserSettingsRepository userSettingsRepository;
     @Value("${app.invitation.expiry-days}")
     private int invitationExpiryDays;
 
@@ -120,10 +125,14 @@ public class InvitationServiceImpl implements InvitationService {
         Invitation savedInvitation = invitationRepository.save(invitation);
         log.info("Invitation created with ID: {}", savedInvitation.getInvitationId());
 
+        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.MANAGER);
+
+        UserSettings userSettings = userSettingsRepository.save(new UserSettings());
         // Create pending user
-        User invitee = createPendingUser(savedInvitation, invitationDto);
+        User invitee = createPendingUser(savedInvitation, invitationDto, userRole);
         invitation.setInvitee(invitee);
 
+        invitee.setUserSettings(userSettings);
 
         // Build invitation link
         String invitationLink = String.format("%s/accept-invitation?token=%s", baseUrl, token);
@@ -323,9 +332,6 @@ public class InvitationServiceImpl implements InvitationService {
         if (invitation.getInvitationType() == InvitationType.EMPLOYEE){
             createEmployeeRecord(user);
         }
-
-
-
         log.info("Invitation accepted for user: {}", user.getEmail());
         return true;
     }
@@ -358,7 +364,7 @@ public class InvitationServiceImpl implements InvitationService {
     }
 
     // Private helper methods
-    private User createPendingUser(Invitation invitation, InvitationRequestDto invitationDto) {
+    private User createPendingUser(Invitation invitation, InvitationRequestDto invitationDto, UserRole userRole) {
         User pendingUser = new User();
         pendingUser.setEmail(invitationDto.getEmail());
         pendingUser.setFirstName(invitationDto.getFirstName());
@@ -367,6 +373,7 @@ public class InvitationServiceImpl implements InvitationService {
         pendingUser.setStatus(UserStatus.INVITED);
         pendingUser.setIsEmailVerified(false);
         pendingUser.setCreatedFromInvitation(invitation);
+        pendingUser.setRoles(List.of(userRole));
         pendingUser.setTenant(invitation.getTenant());
 
 
