@@ -10,7 +10,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "timesheetentries")
+@Table(name = "timesheet_entries")
 public class TimesheetEntry {
     @Id
     @Column(name = "timesheet_entry_id", nullable = false)
