@@ -30,7 +30,7 @@ public class Consultant extends BaseTenantEntity {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "profile_title")
     private String profileTitle;
 
     @Enumerated(EnumType.STRING)

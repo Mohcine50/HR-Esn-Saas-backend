@@ -4,10 +4,12 @@ import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
+import com.shegami.hr_saas.modules.auth.entity.UserSettings;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
+import com.shegami.hr_saas.modules.auth.repository.UserSettingsRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.mission.dto.ConsultantDto;
@@ -43,7 +45,7 @@ public class ConsultantServiceImpl implements ConsultantService {
     private final UserMapper userMapper;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final UserSettingsRepository userSettingsRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -76,7 +78,8 @@ public class ConsultantServiceImpl implements ConsultantService {
         var tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         Tenant tenant = tenantService.getTenant(tenantId);
 
-        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.EMPLOYEE);
+        UserRole userRole = userRoleService.getUserRoleByName(UserRoles.CONSULTANT);
+        UserSettings settings = userSettingsRepository.save(new UserSettings());
 
         // Create new User
         String password = generatePassword();
@@ -88,6 +91,7 @@ public class ConsultantServiceImpl implements ConsultantService {
         newUser.setEmail(consultantDto.getEmail());
         newUser.setStatus(UserStatus.INVITED);
         newUser.setPending(true);
+        newUser.setUserSettings(settings);
         newUser.setIsEmailVerified(false);
         newUser.getRoles().add(userRole);
 
