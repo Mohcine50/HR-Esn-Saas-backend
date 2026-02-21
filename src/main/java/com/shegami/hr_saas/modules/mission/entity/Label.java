@@ -11,7 +11,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "labels")
+@Table(name = "labels",
+        indexes = @Index(columnList = "tenant_id, labelName")
+)
 public class Label extends BaseTenantEntity {
 
     private String labelName;

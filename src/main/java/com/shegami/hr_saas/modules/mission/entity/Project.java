@@ -14,7 +14,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "projects")
+@Table(name = "projects",
+indexes = @Index(columnList = "tenant_id, name")
+)
 public class Project extends BaseTenantEntity {
 
     private String name;

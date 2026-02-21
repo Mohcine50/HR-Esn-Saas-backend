@@ -29,7 +29,6 @@ public class DropdownServiceImpl implements DropdownService {
         return query(consultantRepository, search, limit);
     }
 
-    @Cacheable(value = "labels-dropdown", key = "#UserContextHolder.getCurrentUserContext().tenantId() + ':' + #search")
     public DropdownResponse<DropdownOptionDTO> searchLabels(String search, int limit) {
         return query(labelRepository, search, limit);
     }

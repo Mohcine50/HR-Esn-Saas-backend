@@ -19,7 +19,7 @@ public interface ConsultantRepository extends JpaRepository<Consultant, String>,
     boolean existsByEmail(String email);
 
     @Query("""
-        SELECT new com.shegami.hr_saas.shared.dto.DropdownOptionDTO(c.consultantId, CONCAT(C.firstName, ' ' , c.lastName) )
+        SELECT new com.shegami.hr_saas.shared.dto.DropdownOptionDTO(c.consultantId, CONCAT(c.firstName, ' ' , c.lastName) )
         FROM Consultant c
         WHERE c.tenant.tenantId = :tenantId
           AND (

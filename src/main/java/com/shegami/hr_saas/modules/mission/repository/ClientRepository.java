@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-public interface ClientRepository extends JpaRepository<Client, String>, Searchable {
+public interface ClientRepository extends JpaRepository<Client, String> {
 
     @Query("SELECT c FROM Client c WHERE c.tenant.tenantId = :tenant")
     Page<Client> findByTenantId(Pageable pageable, @Param("tenant") String tenant);

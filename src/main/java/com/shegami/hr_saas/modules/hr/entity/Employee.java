@@ -16,7 +16,9 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "employees")
+@Table(name = "employees",
+        indexes = @Index(columnList = "tenant_id, user.firstName, user.lastName")
+)
 public class Employee extends BaseTenantEntity {
 
 

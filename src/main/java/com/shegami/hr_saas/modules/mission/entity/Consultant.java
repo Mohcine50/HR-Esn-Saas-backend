@@ -19,7 +19,10 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "consultants")
+@Table(name = "consultants", indexes = {@Index(columnList = "tenant_id, firstName"),
+        @Index(columnList = "tenant_id, lastName")
+}
+)
 public class Consultant extends BaseTenantEntity {
     @Column(nullable = false)
     private String firstName;
