@@ -33,7 +33,7 @@ public class JpaConfig {
             userRoleService.addUserRole(new UserRole(null, UserRoles.ADMIN));
             userRoleService.addUserRole(new UserRole(null, UserRoles.MANAGER));
             userRoleService.addUserRole(new UserRole(null, UserRoles.FINANCIAL));
-            userRoleService.addUserRole(new UserRole(null, UserRoles.EMPLOYEE));
+            userRoleService.addUserRole(new UserRole(null, UserRoles.CONSULTANT));
         };
     }
 
