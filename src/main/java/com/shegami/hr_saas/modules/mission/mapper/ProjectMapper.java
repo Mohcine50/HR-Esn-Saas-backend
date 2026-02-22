@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.mission.mapper;
 
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.mission.dto.ProjectDto;
+import com.shegami.hr_saas.modules.mission.dto.UpdateProjectRequest;
 import com.shegami.hr_saas.modules.mission.entity.Project;
 import org.mapstruct.*;
 
@@ -12,5 +13,5 @@ public interface ProjectMapper {
     ProjectDto toDto(Project project);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    Project partialUpdate(ProjectDto projectDto, @MappingTarget Project project);
+    Project partialUpdate(UpdateProjectRequest projectDto, @MappingTarget Project project);
 }
