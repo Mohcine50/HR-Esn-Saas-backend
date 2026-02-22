@@ -39,6 +39,9 @@ public class Project extends BaseTenantEntity {
     @Enumerated(EnumType.STRING)
     private ProjectStatus projectStatus;
 
+    @ManyToOne()
+    private Client client;
+
     @Id
     @Column(name = "project_id", nullable = false)
     private String projectId;

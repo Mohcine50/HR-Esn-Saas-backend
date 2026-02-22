@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -29,6 +30,8 @@ public class Client extends BaseTenantEntity {
     @Column(name = "vat_number")
     private String vatNumber;
 
+    @OneToMany(fetch = FetchType.LAZY)
+    private Set<Project> projects;
 
     @Id
     @Column(name = "client_id", nullable = false)
