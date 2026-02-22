@@ -18,18 +18,33 @@ public interface ConsultantRepository extends JpaRepository<Consultant, String>,
     Optional<Consultant> findByEmail(String email);
     boolean existsByEmail(String email);
 
-    @Query("""
-        SELECT new com.shegami.hr_saas.shared.dto.DropdownOptionDTO(c.consultantId, CONCAT(c.firstName, ' ' , c.lastName) )
-        FROM Consultant c
-        WHERE c.tenant.tenantId = :tenantId
+    @Query(
+            value = """
+        SELECT c.consultant_id AS id,
+               CONCAT(c.first_name, ' ', c.last_name) AS name
+        FROM consultants c
+        WHERE c.tenant_id = :tenantId
           AND (
-                    :search IS NULL
-                    OR LOWER(c.user.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-                    OR LOWER(c.user.lastName)  LIKE LOWER(CONCAT('%', :search, '%'))
-                    OR LOWER(CONCAT(c.user.firstName, ' ', c.user.lastName)) LIKE LOWER(CONCAT('%', :search, '%'))
-                  )
-                ORDER BY c.user.firstName ASC
-    """)
+            :search IS NULL
+            OR LOWER(c.first_name) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(c.last_name)  LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(CONCAT(c.first_name, ' ', c.last_name)) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+        ORDER BY c.first_name ASC
+    """,
+            countQuery = """
+        SELECT COUNT(c.consultant_id)
+        FROM consultants c
+        WHERE c.tenant_id = :tenantId
+          AND (
+            :search IS NULL
+            OR LOWER(c.first_name) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(c.last_name)  LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(CONCAT(c.first_name, ' ', c.last_name)) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """,
+            nativeQuery = true
+    )
     Page<DropdownOptionDTO> searchForDropdown(
             @Param("search")   String search,
             @Param("tenantId") String tenantId,

@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface EmployeeRepository extends JpaRepository<Employee, String>, Searchable {
+public interface EmployeeRepository extends JpaRepository<Employee, String> {
 
 
     @Query("SELECT e FROM Employee e WHERE e.tenant.tenantId = :tenant and e.user.userId <> :userId")
@@ -26,25 +26,4 @@ public interface EmployeeRepository extends JpaRepository<Employee, String>, Sea
             \s""")
     List<EmployeesCountByContract> countEmployeeByContractType(@Param("tenant") String tenant);
 
-
-    @Query("""
-                SELECT new com.shegami.hr_saas.shared.dto.DropdownOptionDTO(
-                    e.employeeId,
-                    CONCAT(e.user.firstName, ' ', e.user.lastName)
-                )
-                FROM Employee e
-                WHERE e.tenant.tenantId = :tenantId
-                  AND (
-                    :search IS NULL
-                    OR LOWER(e.user.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-                    OR LOWER(e.user.lastName)  LIKE LOWER(CONCAT('%', :search, '%'))
-                    OR LOWER(CONCAT(e.user.firstName, ' ', e.user.lastName)) LIKE LOWER(CONCAT('%', :search, '%'))
-                  )
-                ORDER BY e.user.firstName ASC
-            """)
-    Page<DropdownOptionDTO> searchForDropdown(
-            @Param("search") String search,
-            @Param("tenantId") String tenantId,
-            Pageable pageable
-    );
 }

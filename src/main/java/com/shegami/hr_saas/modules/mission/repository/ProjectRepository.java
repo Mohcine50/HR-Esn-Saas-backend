@@ -10,13 +10,29 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ProjectRepository extends JpaRepository<Project, String>, Searchable {
-    @Query("""
-        SELECT new com.shegami.hr_saas.shared.dto.DropdownOptionDTO(p.projectId, p.name)
-        FROM Project p
-        WHERE p.tenant.tenantId = :tenantId
-          AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+    @Query(
+            value = """
+        SELECT p.project_id AS id,
+               p.name       AS name
+        FROM projects p
+        WHERE p.tenant_id = :tenantId
+          AND (
+            :search IS NULL
+            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
         ORDER BY p.name ASC
-    """)
+    """,
+            countQuery = """
+        SELECT COUNT(p.project_id)
+        FROM projects p
+        WHERE p.tenant_id = :tenantId
+          AND (
+            :search IS NULL
+            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """,
+            nativeQuery = true
+    )
     Page<DropdownOptionDTO> searchForDropdown(
             @Param("search")   String search,
             @Param("tenantId") String tenantId,

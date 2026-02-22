@@ -29,13 +29,29 @@ public interface LabelRepository extends JpaRepository<Label, String>, Searchabl
     boolean existsByLabelIdAndTenantTenantId(String id, String tenantId);
     void deleteByLabelIdAndTenantTenantId(String id, String tenantId);
 
-    @Query("""
-        SELECT new com.shegami.hr_saas.shared.dto.DropdownOptionDTO(l.labelId, l.labelName)
-        FROM Label l
-        WHERE l.tenant.tenantId = :tenantId
-          AND (:search IS NULL OR LOWER(l.labelName) LIKE LOWER(CONCAT('%', :search, '%')))
-        ORDER BY l.labelName ASC
-    """)
+    @Query(
+            value = """
+        SELECT l.label_id AS id,
+               l.label_name AS name
+        FROM labels l
+        WHERE l.tenant_id = :tenantId
+          AND (
+            :search IS NULL
+            OR LOWER(l.label_name) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+        ORDER BY l.label_name ASC
+    """,
+            countQuery = """
+        SELECT COUNT(l.label_id)
+        FROM labels l
+        WHERE l.tenant_id = :tenantId
+          AND (
+            :search IS NULL
+            OR LOWER(l.label_name) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """,
+            nativeQuery = true
+    )
     Page<DropdownOptionDTO> searchForDropdown(
             @Param("search")   String search,
             @Param("tenantId") String tenantId,
