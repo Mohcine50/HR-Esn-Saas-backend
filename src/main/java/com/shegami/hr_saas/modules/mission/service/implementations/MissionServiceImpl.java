@@ -137,7 +137,8 @@ public class MissionServiceImpl implements MissionService {
 
         var consultants = consultantService.getAllConsultants(dto.getConsultants());
         var attachements = uploadService.getUploadFiles(dto.getAttachements());
-        Project project = projectMapper.toEntity(projectService.getProjectById(dto.getClient()));
+
+        Project project = projectMapper.toEntity(projectService.getProjectById(dto.getProject()));
         Client client = clientService.getClientByIdForMission(dto.getClient());
         var labels = labelsService.getAllLabels(dto.getLabels());
 

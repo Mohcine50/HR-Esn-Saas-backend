@@ -28,8 +28,9 @@ public class MissionDto implements Serializable {
     String title;
     String description;
     ClientDto client;
-    Set<ConsultantDto> consultant;
+    Set<ConsultantDto> consultants;
     EmployeeDto accountManager;
+    ProjectDto project;
     Priority priority;
     MissionStatus status;
     String missionId;
