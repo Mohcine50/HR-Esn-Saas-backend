@@ -26,7 +26,7 @@ public class JpaConfig {
         return new JpaAuditorAware(userRepository);
     }
 
-    //@Bean
+    @Bean
     public CommandLineRunner commandLineRunner() {
         return args -> {
             userRoleService.addUserRole(new UserRole(null, UserRoles.COMPANY_OWNER));

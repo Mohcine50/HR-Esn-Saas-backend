@@ -32,8 +32,7 @@ public class Project extends BaseTenantEntity {
     @JoinTable()
     private Set<Consultant> consultants;
 
-    @OneToMany
-    @JoinTable()
+    @OneToMany(mappedBy = "project")
     private Set<Mission> missions;
 
     @Enumerated(EnumType.STRING)

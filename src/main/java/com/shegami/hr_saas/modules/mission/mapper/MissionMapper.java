@@ -10,6 +10,7 @@ import org.mapstruct.*;
 public interface MissionMapper {
     Mission toEntity(MissionDto missionDto);
 
+    @Mapping(target = "project.missions", ignore = true)
     MissionDto toDto(Mission mission);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
