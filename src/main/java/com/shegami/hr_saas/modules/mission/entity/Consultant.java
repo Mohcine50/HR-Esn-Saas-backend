@@ -51,6 +51,9 @@ public class Consultant extends BaseTenantEntity {
     @Column(nullable = false)
     private ConsultantLevel seniority;
 
+    @ManyToMany
+    private Set<Project> projects;
+
     @ElementCollection
     @CollectionTable(name = "consultant_skills", joinColumns = @JoinColumn(name = "consultant_id"))
     @Column(name = "skill")

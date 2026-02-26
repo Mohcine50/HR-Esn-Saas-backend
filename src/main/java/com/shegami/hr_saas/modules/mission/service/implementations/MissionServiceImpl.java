@@ -14,6 +14,7 @@ import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.mission.entity.Project;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
+import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
 import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
 import com.shegami.hr_saas.modules.mission.mapper.ConsultantMapper;
 import com.shegami.hr_saas.modules.mission.mapper.MissionMapper;
@@ -21,6 +22,7 @@ import com.shegami.hr_saas.modules.mission.mapper.ProjectMapper;
 import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
+import com.shegami.hr_saas.modules.mission.repository.ProjectRepository;
 import com.shegami.hr_saas.modules.mission.service.*;
 import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.modules.upload.service.UploadService;
@@ -35,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +57,7 @@ public class MissionServiceImpl implements MissionService {
     private final ConsultantService consultantService;
     private final UploadService uploadService;
     private final LabelsService labelsService;
+    private final ProjectRepository projectRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -138,7 +143,14 @@ public class MissionServiceImpl implements MissionService {
         var consultants = consultantService.getAllConsultants(dto.getConsultants());
         var attachements = uploadService.getUploadFiles(dto.getAttachements());
 
-        Project project = projectMapper.toEntity(projectService.getProjectById(dto.getProject()));
+        Project project = projectRepository.findById(dto.getProject())
+                .orElseThrow(() -> new ProjectNotFoundException("Project with not found with id: " + dto.getProject()));
+
+        consultants.forEach(project::addConsultant);
+
+        Project savedProject = projectRepository.save(project);
+        consultants.forEach(project::addConsultant);
+
         Client client = clientService.getClientByIdForMission(dto.getClient());
         var labels = labelsService.getAllLabels(dto.getLabels());
 
@@ -148,7 +160,7 @@ public class MissionServiceImpl implements MissionService {
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .priority(dto.getPriority())
-                .project(project)
+                .project(savedProject)
                 .consultants(consultants)
                 .labels(labels)
                 .attachments(attachements)

@@ -51,4 +51,14 @@ public class Project extends BaseTenantEntity {
         }
     }
 
+    public void addConsultant(Consultant consultant) {
+        this.consultants.add(consultant);
+        consultant.getProjects().add(this);
+    }
+
+    public void removeConsultant(Consultant consultant) {
+        this.consultants.remove(consultant);
+        consultant.getProjects().remove(this);
+    }
+
 }
