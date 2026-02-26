@@ -14,6 +14,7 @@ import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.mission.entity.Project;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
+import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
 import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
 import com.shegami.hr_saas.modules.mission.mapper.ConsultantMapper;
@@ -76,7 +77,9 @@ public class MissionServiceImpl implements MissionService {
 
         log.info("Fetching missions for Consultant : {} From Tenant : {}", userId, tenantId );
 
-        return missionRepository.findByConsultantIdAndTenantId(pageable, tenantId, userId).map(missionMapper::toDto);
+        Consultant consultant = consultantRepository.findByUserUserId(userId).orElseThrow(() -> new ConsultantNotFoundException("Consultant not found with ID: " + userId));
+
+        return missionRepository.findByConsultantIdAndTenantId(pageable, tenantId, consultant).map(missionMapper::toDto);
     }
 
     @Transactional

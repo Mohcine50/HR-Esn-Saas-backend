@@ -16,7 +16,7 @@ public interface MissionRepository extends JpaRepository<Mission, String> {
   @Query("SELECT m FROM Mission m WHERE m.tenant.tenantId = :tenantId")
   Page<Mission> findByTenantId(Pageable pageable, @Param("tenantId") String tenantId);
 
-  @Query("SELECT m FROM Mission m WHERE m.tenant.tenantId = :tenantId AND (:consultantId) MEMBER OF m.consultants")
-  Page<Mission> findByConsultantIdAndTenantId(Pageable pageable, @Param("tenantId") String tenantId, @Param("consultantId") String consultantId);
+  @Query("SELECT m FROM Mission m WHERE m.tenant.tenantId = :tenantId AND (:consultant) MEMBER OF m.consultants")
+  Page<Mission> findByConsultantIdAndTenantId(Pageable pageable, @Param("tenantId") String tenantId, @Param("consultant") Consultant consultant);
 
 }

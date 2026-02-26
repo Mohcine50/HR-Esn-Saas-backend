@@ -50,4 +50,6 @@ public interface ConsultantRepository extends JpaRepository<Consultant, String>,
             @Param("tenantId") String tenantId,
             Pageable pageable
     );
+
+    Optional<Consultant> findByUserUserId(String userId);
 }
