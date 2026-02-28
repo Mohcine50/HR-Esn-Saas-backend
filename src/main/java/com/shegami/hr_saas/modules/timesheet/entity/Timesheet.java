@@ -8,7 +8,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -26,7 +28,7 @@ public class Timesheet extends BaseTenantEntity {
     private TimesheetStatus status;
 
     @OneToMany(mappedBy = "timesheet", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TimesheetEntry> entries;
+    private Set<TimesheetEntry> entries = new HashSet<>();
 
     private LocalDateTime validatedAt;
     private String validatedBy;
