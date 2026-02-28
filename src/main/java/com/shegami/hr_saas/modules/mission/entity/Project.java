@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,10 +31,10 @@ public class Project extends BaseTenantEntity {
 
     @ManyToMany
     @JoinTable()
-    private Set<Consultant> consultants;
+    private Set<Consultant> consultants = new HashSet<>();
 
     @OneToMany(mappedBy = "project")
-    private Set<Mission> missions;
+    private Set<Mission> missions = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     private ProjectStatus projectStatus;
