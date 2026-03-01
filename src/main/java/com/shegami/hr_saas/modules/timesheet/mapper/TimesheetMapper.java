@@ -3,21 +3,32 @@ package com.shegami.hr_saas.modules.timesheet.mapper;
 import com.shegami.hr_saas.modules.auth.mapper.TenantMapper;
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.mission.mapper.MissionMapper;
-import com.shegami.hr_saas.modules.timesheet.dto.TimesheetDto;
+import com.shegami.hr_saas.modules.timesheet.dto.TimesheetEntryResponse;
+import com.shegami.hr_saas.modules.timesheet.dto.TimesheetExportRow;
+import com.shegami.hr_saas.modules.timesheet.dto.TimesheetResponse;
 import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
+import com.shegami.hr_saas.modules.timesheet.entity.TimesheetEntry;
 import org.mapstruct.*;
 
-@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = {TenantMapper.class, UserMapper.class, UserMapper.class, MissionMapper.class, TimesheetEntryMapper.class})
+import java.util.List;
+
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
 public interface TimesheetMapper {
-    Timesheet toEntity(TimesheetDto timesheetDto);
 
-    @AfterMapping
-    default void linkEntries(@MappingTarget Timesheet timesheet) {
-        timesheet.getEntries().forEach(entry -> entry.setTimesheet(timesheet));
+    @Mapping(source = "mission.missionId", target = "missionId")
+    @Mapping(source = "mission.title",     target = "missionTitle")
+    @Mapping(target = "totalDays",         expression = "java(computeTotalDays(timesheet))")
+    TimesheetResponse toResponse(Timesheet timesheet);
+
+    List<TimesheetResponse> toResponseList(List<Timesheet> timesheets);
+
+    TimesheetEntryResponse toEntryResponse(TimesheetEntry entry);
+
+
+    default double computeTotalDays(Timesheet timesheet) {
+        if (timesheet.getEntries() == null) return 0.0;
+        return timesheet.getEntries().stream()
+                .mapToDouble(TimesheetEntry::getQuantity)
+                .sum();
     }
-
-    TimesheetDto toDto(Timesheet timesheet);
-
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    Timesheet partialUpdate(TimesheetDto timesheetDto, @MappingTarget Timesheet timesheet);
 }
