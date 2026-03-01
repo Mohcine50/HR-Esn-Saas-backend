@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 
 public record CreateTimesheetRequest(
         @NotBlank String missionId,
-        @NotBlank String consultantId,
         @Min(1) @Max(12) int month,
         @Min(2000) int year
 ) {}

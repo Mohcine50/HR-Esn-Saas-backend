@@ -19,6 +19,7 @@ import com.shegami.hr_saas.modules.timesheet.repository.TimesheetRepository;
 import com.shegami.hr_saas.modules.timesheet.service.TimesheetService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class TimesheetServiceImpl implements TimesheetService {
 
     private final TimesheetRepository timesheetRepository;
     private final MissionRepository missionRepository;
+    @Qualifier("timesheetMapper")
     private final TimesheetMapper mapper;
     private final EmployeeRepository employeeRepository;
     private final TenantService tenantService;
@@ -44,8 +46,10 @@ public class TimesheetServiceImpl implements TimesheetService {
     public TimesheetResponse createTimesheet(CreateTimesheetRequest req) {
 
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        String consultantId = UserContextHolder.getCurrentUserContext().tenantId();
+
         log.info("[Timesheet] Creating timesheet | tenantId={} missionId={} consultantId={} period={}/{}",
-                tenantId, req.missionId(), req.consultantId(), req.month(), req.year());
+                tenantId, req.missionId(), consultantId, req.month(), req.year());
 
         Tenant tenant = tenantService.getTenant(tenantId);
 
@@ -58,10 +62,10 @@ public class TimesheetServiceImpl implements TimesheetService {
 
         boolean exists = timesheetRepository
                 .existsByMissionAndConsultantAndPeriod(
-                        req.missionId(), req.consultantId(), req.month(), req.year());
+                        req.missionId(), consultantId, req.month(), req.year());
         if (exists) {
             log.warn("[Timesheet] Duplicate timesheet rejected | missionId={} consultantId={} period={}/{}",
-                    req.missionId(), req.consultantId(), req.month(), req.year());
+                    req.missionId(), consultantId, req.month(), req.year());
             throw new IllegalStateException("A timesheet already exists for this period.");
         }
 
@@ -74,7 +78,7 @@ public class TimesheetServiceImpl implements TimesheetService {
 
         Timesheet saved = timesheetRepository.save(timesheet);
         log.info("[Timesheet] Timesheet created | timesheetId={} missionId={} consultantId={} period={}/{}",
-                saved.getTimesheetId(), req.missionId(), req.consultantId(), req.month(), req.year());
+                saved.getTimesheetId(), req.missionId(), consultantId, req.month(), req.year());
 
         return mapper.toResponse(saved);
     }
