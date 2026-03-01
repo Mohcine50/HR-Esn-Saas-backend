@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 @Data
@@ -13,6 +14,7 @@ import java.util.Date;
 public class ApiException {
 
     private String Message;
+    private String Code;
     private HttpStatus httpStatus;
-    private Date date;
+    private LocalDate date;
 }
