@@ -7,6 +7,8 @@ import com.shegami.hr_saas.modules.timesheet.service.TimesheetService;
 import com.shegami.hr_saas.modules.timesheet.dto.ReviewTimesheetRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -84,5 +86,13 @@ public class TimesheetController {
     public ResponseEntity<List<TimesheetResponse>> getHistory(@PathVariable String consultantId) {
 
         return ResponseEntity.ok(timesheetService.getConsultantHistory(consultantId));
+    }
+
+    /**
+     * Admin — paginated list of all timesheets for the tenant
+     */
+    @GetMapping("/all")
+    public ResponseEntity<Page<TimesheetResponse>> getAll(Pageable pageable) {
+        return ResponseEntity.ok(timesheetService.getAllTimesheets(pageable));
     }
 }

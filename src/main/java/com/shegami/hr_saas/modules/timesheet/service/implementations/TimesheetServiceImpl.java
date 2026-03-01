@@ -20,6 +20,8 @@ import com.shegami.hr_saas.modules.timesheet.service.TimesheetService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -214,6 +216,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     @Override
     public List<TimesheetResponse> getConsultantHistory(String consultantId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+
         log.debug("[Timesheet] Fetching history | consultantId={} tenantId={}", consultantId, tenantId);
 
         List<TimesheetResponse> history = timesheetRepository
@@ -238,6 +241,21 @@ public class TimesheetServiceImpl implements TimesheetService {
                     log.warn("[Timesheet] Timesheet not found | timesheetId={} tenantId={}", timesheetId, tenantId);
                     return new IllegalArgumentException("Timesheet not found.");
                 });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TimesheetResponse> getAllTimesheets(Pageable pageable) {
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        log.debug("[Timesheet] Fetching all timesheets | tenantId={} page={} size={}",
+                tenantId, pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<TimesheetResponse> result = timesheetRepository
+                .findAllByTenantTenantId(tenantId, pageable)
+                .map(mapper::toResponse);
+
+        log.debug("[Timesheet] All timesheets fetched | tenantId={} total={}", tenantId, result.getTotalElements());
+        return result;
     }
 
 

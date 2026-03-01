@@ -2,6 +2,8 @@ package com.shegami.hr_saas.modules.timesheet.repository;
 
 import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -72,4 +74,7 @@ public interface TimesheetRepository extends JpaRepository<Timesheet, Long> {
             @Param("tenantId") String tenantId,
             @Param("month") int month,
             @Param("year") int year);
+
+    Page<Timesheet> findAllByTenantTenantId(String tenantId, Pageable pageable);
+
 }
