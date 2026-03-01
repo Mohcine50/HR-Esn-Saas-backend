@@ -5,6 +5,7 @@ import com.shegami.hr_saas.modules.hr.exception.*;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
+import com.shegami.hr_saas.modules.timesheet.exceptions.TimesheetNotFoundException;
 import com.shegami.hr_saas.modules.upload.exceptions.StorageUploadException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -90,6 +91,14 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(value = MissionNotFoundException.class)
     public ResponseEntity<Object> handleMissionNotFoundException(MissionNotFoundException resourceNotFoundException) {
+
+        ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
+
+        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = TimesheetNotFoundException.class)
+    public ResponseEntity<Object> handleTimesheetNotFoundException(TimesheetNotFoundException resourceNotFoundException) {
 
         ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
 
