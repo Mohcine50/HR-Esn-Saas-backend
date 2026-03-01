@@ -1,5 +1,6 @@
 package com.shegami.hr_saas.modules.timesheet.entity;
 
+import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.timesheet.enums.TimesheetStatus;
@@ -35,7 +36,9 @@ public class Timesheet extends BaseTenantEntity {
     private Set<TimesheetEntry> entries = new HashSet<>();
 
     private LocalDateTime validatedAt;
-    private String validatedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Employee validatedBy;
 
     @Id
     @Column(name = "timesheet_id", nullable = false)
