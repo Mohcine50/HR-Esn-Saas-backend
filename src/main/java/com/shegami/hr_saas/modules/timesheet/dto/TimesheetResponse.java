@@ -17,6 +17,7 @@ public record TimesheetResponse(
         TimesheetStatus status,
         List<TimesheetEntryResponse> entries,
         double totalDays,
+        String projectName,
         LocalDateTime validatedAt,
         EmployeeDto validatedBy
 ) {}

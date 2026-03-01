@@ -18,6 +18,7 @@ public interface TimesheetMapper {
     @Mapping(source = "mission.missionId", target = "missionId")
     @Mapping(source = "mission.title",     target = "missionTitle")
     @Mapping(target = "totalDays",         expression = "java(computeTotalDays(timesheet))")
+    @Mapping(source = "mission.project.name", target="projectName")
     TimesheetResponse toResponse(Timesheet timesheet);
 
     List<TimesheetResponse> toResponseList(List<Timesheet> timesheets);
