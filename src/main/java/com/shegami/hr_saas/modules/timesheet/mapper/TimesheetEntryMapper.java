@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.timesheet.mapper;
 
-import com.shegami.hr_saas.modules.timesheet.dto.TimesheetEntryDto;
 import com.shegami.hr_saas.modules.timesheet.entity.TimesheetEntry;
 import org.mapstruct.*;
 
