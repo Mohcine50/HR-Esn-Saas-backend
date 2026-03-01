@@ -19,7 +19,7 @@ public class TenantServiceImpl implements TenantService {
 
     @Override
     public Tenant getTenant(String tenantId) {
-        return tenantRepository.findById(tenantId).orElseThrow(TenantNotFoundException::new);
+        return tenantRepository.findById(tenantId).orElseThrow(()->new TenantNotFoundException("Tenant Not Found with id: " + tenantId));
     }
 
     @Override
