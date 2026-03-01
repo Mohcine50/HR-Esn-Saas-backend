@@ -7,6 +7,8 @@ import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
 import com.shegami.hr_saas.modules.timesheet.exceptions.TimesheetNotFoundException;
 import com.shegami.hr_saas.modules.upload.exceptions.StorageUploadException;
+import com.shegami.hr_saas.shared.enums.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,222 +16,189 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    @ExceptionHandler(value = ApiRequestException.class)
-    public ResponseEntity<Object> handleApiRequestException(ApiRequestException apiRequestException) {
+    // ── Auth ──────────────────────────────────────────────────────────────────
 
-        ApiException apiException = new ApiException(apiRequestException.getMessage(), HttpStatus.BAD_REQUEST, new Date());
-
-        return new ResponseEntity<>(apiException, apiException.getHttpStatus());
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiException> handleInvalidToken(InvalidTokenException ex) {
+        return build(ErrorCode.INVALID_TOKEN, HttpStatus.UNAUTHORIZED);
     }
 
-    @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public ResponseEntity<Object> handleRequestBodyValidation(MethodArgumentNotValidException ex) {
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ApiException> handleTokenExpired(TokenExpiredException ex) {
+        return build(ErrorCode.TOKEN_EXPIRED, HttpStatus.GONE);
+    }
 
+    @ExceptionHandler(TokenNotFoundException.class)
+    public ResponseEntity<ApiException> handleTokenNotFound(TokenNotFoundException ex) {
+        return build(ErrorCode.TOKEN_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidInvitationException.class)
+    public ResponseEntity<ApiException> handleInvalidInvitation(InvalidInvitationException ex) {
+        return build(ErrorCode.INVALID_INVITATION, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    @ExceptionHandler(InvitationExpiredException.class)
+    public ResponseEntity<ApiException> handleInvitationExpired(InvitationExpiredException ex) {
+        return build(ErrorCode.INVITATION_EXPIRED, HttpStatus.GONE);
+    }
+
+    @ExceptionHandler(InvitationAlreadyAccepted.class)
+    public ResponseEntity<ApiException> handleInvitationAlreadyAccepted(InvitationAlreadyAccepted ex) {
+        return build(ErrorCode.INVITATION_ALREADY_USED, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvitationNotFoundException.class)
+    public ResponseEntity<ApiException> handleInvitationNotFound(InvitationNotFoundException ex) {
+        return build(ErrorCode.INVITATION_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(PasswordMismatchException.class)
+    public ResponseEntity<ApiException> handlePasswordMismatch(PasswordMismatchException ex) {
+        return build(ErrorCode.PASSWORD_MISMATCH, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UserAlreadyVerified.class)
+    public ResponseEntity<ApiException> handleUserAlreadyVerified(UserAlreadyVerified ex) {
+        return build(ErrorCode.USER_ALREADY_VERIFIED, HttpStatus.CONFLICT);
+    }
+
+    // ── User ──────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiException> handleUserNotFound(UserNotFoundException ex) {
+        return build(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UserAlreadyExistException.class)
+    public ResponseEntity<ApiException> handleUserAlreadyExists(UserAlreadyExistException ex) {
+        return build(ErrorCode.USER_ALREADY_EXISTS, HttpStatus.CONFLICT); // ← was 404
+    }
+
+    @ExceptionHandler(UserRoleNotFoundException.class)
+    public ResponseEntity<ApiException> handleUserRoleNotFound(UserRoleNotFoundException ex) {
+        return build(ErrorCode.USER_ROLE_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // ── Tenant ────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(TenantNotFoundException.class)
+    public ResponseEntity<ApiException> handleTenantNotFound(TenantNotFoundException ex) {
+        return build(ErrorCode.TENANT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // ── Employee ──────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    public ResponseEntity<ApiException> handleEmployeeNotFound(EmployeeNotFoundException ex) {
+        return build(ErrorCode.EMPLOYEE_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(EmployeeAlreadyExistException.class)
+    public ResponseEntity<ApiException> handleEmployeeAlreadyExists(EmployeeAlreadyExistException ex) {
+        return build(ErrorCode.EMPLOYEE_ALREADY_EXISTS, HttpStatus.CONFLICT); // ← was 404
+    }
+
+    // ── Mission ───────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(MissionNotFoundException.class)
+    public ResponseEntity<ApiException> handleMissionNotFound(MissionNotFoundException ex) {
+        return build(ErrorCode.MISSION_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ProjectNotFoundException.class)
+    public ResponseEntity<ApiException> handleProjectNotFound(ProjectNotFoundException ex) {
+        return build(ErrorCode.PROJECT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ConsultantNotFoundException.class)
+    public ResponseEntity<ApiException> handleConsultantNotFound(ConsultantNotFoundException ex) {
+        return build(ErrorCode.CONSULTANT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // ── Timesheet ─────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(TimesheetNotFoundException.class)
+    public ResponseEntity<ApiException> handleTimesheetNotFound(TimesheetNotFoundException ex) {
+        return build(ErrorCode.TIMESHEET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // ── Storage ───────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(StorageUploadException.class)
+    public ResponseEntity<ApiException> handleStorageUpload(StorageUploadException ex) {
+        return build(ErrorCode.STORAGE_UPLOAD_FAILED, HttpStatus.BAD_GATEWAY);
+    }
+
+    // ── Generic ───────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiException> handleResourceNotFound(ResourceNotFoundException ex) {
+        return build(ErrorCode.RESOURCE_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(AlreadyExistsException.class)
+    public ResponseEntity<ApiException> handleAlreadyExists(AlreadyExistsException ex) {
+        return build(ErrorCode.BAD_REQUEST, HttpStatus.CONFLICT); // ← was 404
+    }
+
+    @ExceptionHandler(ApiRequestException.class)
+    public ResponseEntity<ApiException> handleApiRequest(ApiRequestException ex) {
+        return build(ex.getMessage(), ErrorCode.BAD_REQUEST.getCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    // ── Validation ────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Object> handleValidation(MethodArgumentNotValidException ex) {
         List<String> errors = ex.getBindingResult().getFieldErrors()
-                .stream().map(DefaultMessageSourceResolvable::getDefaultMessage).toList();
+                .stream()
+                .map(f -> f.getField() + ": " + f.getDefaultMessage()) // ← include field name
+                .toList();
 
+        Map<String, Object> body = new HashMap<>();
+        body.put("errorCode",  "VALIDATION_001");
+        body.put("errors",     errors);
+        body.put("timestamp",  new Date());
 
-        return new ResponseEntity<>(getErrorsMap(errors), HttpStatus.BAD_REQUEST);
-
+        return ResponseEntity.badRequest().body(body);
     }
 
-    @ExceptionHandler(value = InvitationExpiredException.class)
-    public ResponseEntity<Object> handleInvitationExpiredException(InvitationExpiredException invitationExpiredException) {
+    // ── Global fallback — catches anything not handled above ──────────────────
 
-        ApiException apiException = new ApiException(invitationExpiredException.getMessage(), HttpStatus.GONE, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.GONE);
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiException> handleUnexpected(Exception ex) {
+        log.error("Unhandled exception: {}", ex.getMessage(), ex); // log full stack
+        return build(ErrorCode.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(value = InvalidInvitationException.class)
-    public ResponseEntity<Object> handleInvalidInvitationException(InvalidInvitationException invitationExpiredException) {
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-        ApiException apiException = new ApiException(invitationExpiredException.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.UNPROCESSABLE_ENTITY);
+    private ResponseEntity<ApiException> build(ErrorCode errorCode, HttpStatus status) {
+        return ResponseEntity
+                .status(status)
+                .body(new ApiException(
+                        errorCode.getMessage(),
+                        errorCode.getCode(),
+                        status,
+                        LocalDate.now()
+                ));
     }
 
-    @ExceptionHandler(value = PasswordMismatchException.class)
-    public ResponseEntity<Object> handlePasswordMismatch(PasswordMismatchException passwordMismatchException) {
-
-        ApiException apiException = new ApiException(passwordMismatchException.getMessage(), HttpStatus.BAD_REQUEST, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(value = InvitationAlreadyAccepted.class)
-    public ResponseEntity<Object> handelInvitationAlreadyAccepted(InvitationAlreadyAccepted invitationAlreadyAccepted) {
-
-        ApiException apiException = new ApiException(invitationAlreadyAccepted.getMessage(), HttpStatus.ACCEPTED, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.ACCEPTED);
-    }
-
-    @ExceptionHandler(value = ResourceNotFoundException.class)
-    public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException resourceNotFoundException) {
-
-        ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = ProjectNotFoundException.class)
-    public ResponseEntity<Object> handleProjectNotFoundException(ProjectNotFoundException resourceNotFoundException) {
-
-        ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = MissionNotFoundException.class)
-    public ResponseEntity<Object> handleMissionNotFoundException(MissionNotFoundException resourceNotFoundException) {
-
-        ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = TimesheetNotFoundException.class)
-    public ResponseEntity<Object> handleTimesheetNotFoundException(TimesheetNotFoundException resourceNotFoundException) {
-
-        ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-
-
-
-    @ExceptionHandler(value = ConsultantNotFoundException.class)
-    public ResponseEntity<Object> handleConsultantNotFoundException(ConsultantNotFoundException resourceNotFoundException) {
-
-        ApiException apiException = new ApiException(resourceNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-
-    @ExceptionHandler(value = StorageUploadException.class)
-    public ResponseEntity<Object> handleStorageUploadException(StorageUploadException storageUploadException) {
-
-        ApiException apiException = new ApiException(storageUploadException.getMessage(), HttpStatus.FORBIDDEN, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.FORBIDDEN);
-    }
-
-
-    @ExceptionHandler(value = UserNotFoundException.class)
-    public ResponseEntity<Object> handleUserNotFoundException(UserNotFoundException notFoundException) {
-
-        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = AlreadyExistsException.class)
-    public ResponseEntity<Object> handleResourceAlreadyExist(AlreadyExistsException alreadyExistsException) {
-
-        ApiException apiException = new ApiException(alreadyExistsException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = UserAlreadyExistException.class)
-    public ResponseEntity<Object> handleUserAlreadyExist(UserAlreadyExistException notFoundException) {
-
-        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = TenantNotFoundException.class)
-    public ResponseEntity<Object> handleTenantNotFoundException(TenantNotFoundException notFoundException) {
-
-        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = UserRoleNotFoundException.class)
-    public ResponseEntity<Object> handleUserRoleNotFoundException(UserRoleNotFoundException notFoundException) {
-
-        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-
-
-    @ExceptionHandler(value = EmployeeNotFoundException.class)
-    public ResponseEntity<Object> handleEmployeeNotFoundException(EmployeeNotFoundException notFoundException) {
-
-        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = EmployeeAlreadyExistException.class)
-    public ResponseEntity<Object> handleEmployeeAlreadyExist(EmployeeAlreadyExistException notFoundException) {
-
-        ApiException apiException = new ApiException(notFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = InvalidTokenException.class)
-    public ResponseEntity<Object> handleInvalidToken(InvalidTokenException invalidTokenException) {
-
-        ApiException apiException = new ApiException(invalidTokenException.getMessage(), HttpStatus.FORBIDDEN, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.FORBIDDEN);
-    }
-
-    @ExceptionHandler(value = TokenNotFoundException.class)
-    public ResponseEntity<Object> handleTokenNotFound(TokenNotFoundException tokenNotFoundException) {
-
-        ApiException apiException = new ApiException(tokenNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(value = TokenExpiredException.class)
-    public ResponseEntity<Object> handleExpiredToken(TokenExpiredException tokenExpiredException) {
-
-        ApiException apiException = new ApiException(tokenExpiredException.getMessage(), HttpStatus.GONE, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.GONE);
-    }
-
-    @ExceptionHandler(value = InvitationNotFoundException.class)
-    public ResponseEntity<Object> handleExpiredToken(InvitationNotFoundException invitationNotFoundException) {
-
-        ApiException apiException = new ApiException(invitationNotFoundException.getMessage(), HttpStatus.NOT_FOUND, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.NOT_FOUND);
-    }
-
-
-
-    @ExceptionHandler(value = UserAlreadyVerified.class)
-    public ResponseEntity<Object> handelUserAlreadyVerified(UserAlreadyVerified userAlreadyVerified) {
-
-        ApiException apiException = new ApiException(userAlreadyVerified.getMessage(), HttpStatus.CONFLICT, new Date());
-
-        return new ResponseEntity<>(apiException, HttpStatus.CONFLICT);
-    }
-
-
-    private Map<String, List<String>> getErrorsMap(List<String> errors) {
-        Map<String, List<String>> errorResponse = new HashMap<>();
-        errorResponse.put("errors", errors);
-        return errorResponse;
+    private ResponseEntity<ApiException> build(String message, String errorCode, HttpStatus status) {
+        return ResponseEntity
+                .status(status)
+                .body(new ApiException(message, errorCode, status,
+                        LocalDate.now()));
     }
 }
