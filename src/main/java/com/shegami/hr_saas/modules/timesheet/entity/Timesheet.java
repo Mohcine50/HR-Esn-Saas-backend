@@ -1,5 +1,6 @@
 package com.shegami.hr_saas.modules.timesheet.entity;
 
+import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.timesheet.enums.TimesheetStatus;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
@@ -20,6 +21,9 @@ import java.util.UUID;
 public class Timesheet extends BaseTenantEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Mission mission;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Consultant consultant;
 
     private Integer month;
     private Integer year;
