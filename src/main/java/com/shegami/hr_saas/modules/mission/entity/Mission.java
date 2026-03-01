@@ -57,6 +57,9 @@ public class Mission extends BaseTenantEntity {
     )
     private Set<Label> labels;
 
+    private LocalDate startDate;
+    private LocalDate endDate;
+
     @Id
     @Column(name = "mission_id", nullable = false)
     private String missionId;
