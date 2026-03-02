@@ -12,6 +12,7 @@ import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.notifications.dto.EmailVerificationMessage;
 import com.shegami.hr_saas.modules.notifications.enums.VerificationType;
 import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
@@ -81,6 +82,8 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(registerDto.getLastName())
                 .phoneNumber(registerDto.getPhone())
                 .build(), tenant);
+
+
 
         String jwtAccessToken = AuthUser(registerDto.getEmail(), registerDto.getPassword());
 

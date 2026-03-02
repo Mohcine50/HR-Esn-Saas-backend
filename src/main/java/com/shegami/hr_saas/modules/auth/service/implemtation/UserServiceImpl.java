@@ -14,10 +14,14 @@ import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.repository.UserSettingsRepository;
 import com.shegami.hr_saas.modules.auth.service.UserRoleService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.hr.entity.Employee;
+import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
+import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private final UserSettingsRepository settingsRepository;
 
     private final UserMapper userMapper;
+    private final EmployeeRepository employeeRepository;
 
     @Override
     public Optional<User> findUserByEmail(String email) {
@@ -69,9 +74,17 @@ public class UserServiceImpl implements UserService {
         newUser.setUserSettings(userSettings);
         newUser.setRoles(new ArrayList<>(List.of(userRole)));
 
-        return userRepository.save(newUser);
+        User createdUser = userRepository.save(newUser);
 
+        Employee employee = new Employee();
+        employee.setTenant(tenant);
+        employee.setUser(createdUser);
+        employee.setStatus(EmployeeStatus.ACTIVE);
+        employee.setHireDate(LocalDateTime.now());
+        var savedEmployee = employeeRepository.save(employee);
+        createdUser.setEmployee(savedEmployee);
 
+        return createdUser;
     }
 
 
