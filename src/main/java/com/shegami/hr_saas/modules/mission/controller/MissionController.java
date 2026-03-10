@@ -65,7 +65,7 @@ public class MissionController {
             @Valid @RequestBody MissionDto missionDto) {
         log.info("REST request to update Mission : {}", id);
 
-        MissionDto result = missionService.updateMission(missionDto);
+        MissionDto result = missionService.updateMission(missionDto, id);
         return ResponseEntity.ok(result);
     }
 

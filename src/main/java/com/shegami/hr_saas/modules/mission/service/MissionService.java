@@ -14,7 +14,7 @@ public interface MissionService {
 
     void assignConsultantToMission(String consultantId, String missionId);
 
-    MissionDto updateMission(MissionDto dto);
+    MissionDto updateMission(MissionDto dto, String missionId);
     void deleteMission(String id);
     MissionDto getMissionById(String id);
     Page<MissionDto> getMissionByConsultant(Pageable pageable);

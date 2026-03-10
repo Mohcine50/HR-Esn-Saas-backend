@@ -16,6 +16,7 @@ import com.shegami.hr_saas.modules.mission.entity.Project;
 import com.shegami.hr_saas.modules.mission.enums.ActivityType;
 import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
+import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
 import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
 import com.shegami.hr_saas.modules.mission.mapper.ConsultantMapper;
@@ -216,16 +217,16 @@ public class MissionServiceImpl implements MissionService {
 
     @Override
     @Transactional
-    public MissionDto updateMission(MissionDto dto) {
+    public MissionDto updateMission(MissionDto dto, String missionId) {
         String actorId  = UserContextHolder.getCurrentUserContext().userId();
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
 
-        log.info("[Mission] Updating mission | missionId={} actorId={}", dto.getMissionId(), actorId);
+        log.info("[Mission] Updating mission | missionId={} actorId={}", missionId, actorId);
 
-        Mission existing = missionRepository.findById(dto.getMissionId())
+        Mission existing = missionRepository.findById(missionId)
                 .orElseThrow(() -> {
                     log.warn("[Mission] Mission not found for update | missionId={}", dto.getMissionId());
-                    return new ResourceNotFoundException("Mission not found with ID: " + dto.getMissionId());
+                    return new MissionNotFoundException("Mission not found with ID: " + dto.getMissionId());
                 });
 
         String actorName = resolveActorName(actorId);
