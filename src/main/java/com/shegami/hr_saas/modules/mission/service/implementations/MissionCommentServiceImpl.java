@@ -2,15 +2,12 @@ package com.shegami.hr_saas.modules.mission.service.implementations;
 
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.mission.dto.CommentRequest;
-import com.shegami.hr_saas.modules.mission.dto.MissionActivityResponse;
 import com.shegami.hr_saas.modules.mission.dto.MissionCommentResponse;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.mission.entity.MissionComment;
 import com.shegami.hr_saas.modules.mission.enums.ActivityType;
 import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
-import com.shegami.hr_saas.modules.mission.mapper.MissionActivityMapper;
 import com.shegami.hr_saas.modules.mission.mapper.MissionCommentMapper;
-import com.shegami.hr_saas.modules.mission.repository.MissionActivityRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionCommentRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
 import com.shegami.hr_saas.modules.mission.service.MissionActivityService;
@@ -35,6 +32,7 @@ public class MissionCommentServiceImpl implements MissionCommentService {
 
 
     @Transactional
+    @Override
     public MissionCommentResponse addComment(String missionId, CommentRequest req) {
         String tenantId  = UserContextHolder.getCurrentUserContext().tenantId();
         String userId    = UserContextHolder.getCurrentUserContext().userId();
@@ -64,6 +62,7 @@ public class MissionCommentServiceImpl implements MissionCommentService {
     }
 
     @Transactional
+    @Override
     public MissionCommentResponse editComment(String commentId, CommentRequest req) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         String userId   = UserContextHolder.getCurrentUserContext().userId();
@@ -89,6 +88,7 @@ public class MissionCommentServiceImpl implements MissionCommentService {
     }
 
     @Transactional
+    @Override
     public void deleteComment(String commentId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         String userId   = UserContextHolder.getCurrentUserContext().userId();
@@ -111,6 +111,7 @@ public class MissionCommentServiceImpl implements MissionCommentService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public List<MissionCommentResponse> getComments(String missionId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         return commentRepository
