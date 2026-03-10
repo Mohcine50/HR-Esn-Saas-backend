@@ -1,6 +1,12 @@
 package com.shegami.hr_saas.modules.mission.service.implementations;
 
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
+import com.shegami.hr_saas.modules.auth.entity.User;
+import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
+import com.shegami.hr_saas.modules.auth.repository.UserRepository;
+import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.hr.entity.Employee;
+import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
 import com.shegami.hr_saas.modules.mission.dto.CommentRequest;
 import com.shegami.hr_saas.modules.mission.dto.MissionCommentResponse;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
@@ -29,6 +35,7 @@ public class MissionCommentServiceImpl implements MissionCommentService {
     private final MissionRepository missionRepository;
     private final MissionActivityService activityService;
     private final MissionCommentMapper missionCommentMapper;
+    private final UserRepository userRepository;
 
 
     @Transactional
@@ -36,9 +43,14 @@ public class MissionCommentServiceImpl implements MissionCommentService {
     public MissionCommentResponse addComment(String missionId, CommentRequest req) {
         String tenantId  = UserContextHolder.getCurrentUserContext().tenantId();
         String userId    = UserContextHolder.getCurrentUserContext().userId();
-        String userName  = UserContextHolder.getCurrentUserContext().email(); // or full name if available
 
         log.info("[Comment] Adding comment | missionId={} authorId={}", missionId, userId);
+
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.warn("[Comment] author not found | userId={}", userId);
+                    return new UserNotFoundException("User not found: " + userId);
+                });
 
         Mission mission = missionRepository
                 .findByMissionIdAndTenantTenantId(missionId, tenantId)
@@ -48,14 +60,14 @@ public class MissionCommentServiceImpl implements MissionCommentService {
         comment.setMission(mission);
         comment.setContent(req.content());
         comment.setAuthorId(userId);
-        comment.setAuthorName(userName);
+        comment.setAuthorName(author.getFirstName() + " " + author.getLastName());
         comment.setTenant(mission.getTenant());
 
         MissionComment saved = commentRepository.save(comment);
 
         // log activity
         activityService.log(mission, ActivityType.COMMENT_ADDED,
-                "added a comment", userId, userName);
+                "added a comment", userId, author.getFirstName() + " " + author.getLastName());
 
         log.info("[Comment] Comment added | commentId={} missionId={}", saved.getCommentId(), missionId);
         return missionCommentMapper.toResponse(saved);
