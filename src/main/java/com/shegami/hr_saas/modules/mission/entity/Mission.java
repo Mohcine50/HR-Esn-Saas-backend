@@ -10,6 +10,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -59,6 +61,24 @@ public class Mission extends BaseTenantEntity {
 
     private LocalDate startDate;
     private LocalDate endDate;
+
+    @OneToMany(
+            mappedBy = "mission",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @OrderBy("createdAt DESC")
+    private List<MissionComment> comments = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "mission",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @OrderBy("createdAt DESC")
+    private List<MissionActivity> activities = new ArrayList<>();
 
     @Id
     @Column(name = "mission_id", nullable = false)
