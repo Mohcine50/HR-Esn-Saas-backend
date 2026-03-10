@@ -1,13 +1,19 @@
 package com.shegami.hr_saas.modules.mission.service.implementations;
 
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
+import com.shegami.hr_saas.modules.mission.dto.MissionActivityResponse;
 import com.shegami.hr_saas.modules.mission.entity.Mission;
 import com.shegami.hr_saas.modules.mission.entity.MissionActivity;
 import com.shegami.hr_saas.modules.mission.enums.ActivityType;
+import com.shegami.hr_saas.modules.mission.mapper.MissionActivityMapper;
 import com.shegami.hr_saas.modules.mission.repository.MissionActivityRepository;
 import com.shegami.hr_saas.modules.mission.service.MissionActivityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 
 @Slf4j
@@ -15,6 +21,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MissionActivityServiceImpl implements MissionActivityService {
     private final MissionActivityRepository activityRepository;
+    private final MissionActivityMapper missionActivityMapper;
+
 
     @Override
     public void log(
@@ -79,5 +87,16 @@ public class MissionActivityServiceImpl implements MissionActivityService {
             case COMMENT_DELETED   -> "deleted a comment";
             default                -> type.name().toLowerCase().replace("_", " ");
         };
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<MissionActivityResponse> getActivities(String missionId) {
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        return activityRepository
+                .findByMissionMissionIdAndTenantTenantIdOrderByCreatedAtDesc(missionId, tenantId)
+                .stream()
+                .map(missionActivityMapper::toResponse)
+                .toList();
     }
 }
