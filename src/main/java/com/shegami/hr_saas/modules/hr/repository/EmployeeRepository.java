@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EmployeeRepository extends JpaRepository<Employee, String> {
 
@@ -26,4 +27,5 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
             \s""")
     List<EmployeesCountByContract> countEmployeeByContractType(@Param("tenant") String tenant);
 
+    Optional<Employee> findByUserUserId(String userId);
 }

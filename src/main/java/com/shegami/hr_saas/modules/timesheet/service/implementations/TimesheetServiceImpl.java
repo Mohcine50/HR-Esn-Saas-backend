@@ -158,7 +158,7 @@ public class TimesheetServiceImpl implements TimesheetService {
         log.info("[Timesheet] Reviewing timesheet | timesheetId={} reviewerId={} approved={}",
                 timesheetId, userId, req.approved());
 
-        Employee manager = employeeRepository.findById(userId)
+        Employee manager = employeeRepository.findByUserUserId(userId)
                 .orElseThrow(() -> {
                     log.warn("[Timesheet] Reviewer not found | userId={}", userId);
                     return new EmployeeNotFoundException("Employee not found: " + userId);
