@@ -34,4 +34,7 @@ public class MissionDto implements Serializable {
     Priority priority;
     MissionStatus status;
     String missionId;
+    LocalDate startDate;
+    LocalDate endDate;
+
 }
