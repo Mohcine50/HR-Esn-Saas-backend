@@ -202,10 +202,11 @@ public class ConsultantServiceImpl implements ConsultantService {
     @Override
     @Transactional(readOnly = true)
     public Page<ConsultantDto> getAllConsultant(Pageable pageable) {
-        log.debug("Fetching paged consultants: Page {}, Size {}",
-                pageable.getPageNumber(), pageable.getPageSize());
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        log.debug("Fetching paged consultants : Page {}, Size {} for tenantId {}",
+                pageable.getPageNumber(), pageable.getPageSize(), tenantId);
 
-        return consultantRepository.findAll(pageable)
+        return consultantRepository.findByTenantId(pageable, tenantId)
                 .map(consultantMapper::toDto);
     }
 

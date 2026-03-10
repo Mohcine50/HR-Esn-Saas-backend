@@ -52,4 +52,6 @@ public interface ConsultantRepository extends JpaRepository<Consultant, String>,
     );
 
     Optional<Consultant> findByUserUserId(String userId);
+
+
 }
