@@ -73,6 +73,8 @@ public class Consultant extends BaseTenantEntity {
     @OneToMany
     private List<Timesheet> timesheets;
 
+
+
     @Id
     @Column(name = "consultant_id", nullable = false)
     private String consultantId;
