@@ -34,6 +34,6 @@ public class ConsultantDto implements Serializable {
     String consultantId;
     List<MissionDto> missions;
     List<TimesheetResponse> timesheets;
-    List<ProjectDto> projects;
+    List<ProjectSummaryDto> projects;
 
 }
