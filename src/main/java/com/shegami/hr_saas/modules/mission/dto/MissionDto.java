@@ -36,5 +36,5 @@ public class MissionDto implements Serializable {
     String missionId;
     LocalDate startDate;
     LocalDate endDate;
-
+    Set<LabelDto> labels;
 }

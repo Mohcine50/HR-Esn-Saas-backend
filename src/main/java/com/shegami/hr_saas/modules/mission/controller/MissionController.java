@@ -47,7 +47,7 @@ public class MissionController {
 
     @PatchMapping("/{missionId}/assign/{consultantId}")
     public ResponseEntity<Void> assign(@PathVariable String missionId, @PathVariable String consultantId) {
-        missionService.assignConsultantToMission(missionId, consultantId);
+        missionService.assignConsultantToMission(consultantId, missionId);
         return ResponseEntity.noContent().build();
     }
 
