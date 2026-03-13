@@ -5,6 +5,7 @@ import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.mission.enums.ConsultantLevel;
 import com.shegami.hr_saas.modules.mission.enums.ConsultantStatus;
 import com.shegami.hr_saas.modules.mission.enums.ConsultantType;
+import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -13,6 +14,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -65,6 +67,11 @@ public class Consultant extends BaseTenantEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    private List<Mission> missions;
+
+    @OneToMany
+    private List<Timesheet> timesheets;
 
     @Id
     @Column(name = "consultant_id", nullable = false)
