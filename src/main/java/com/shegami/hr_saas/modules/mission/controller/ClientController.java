@@ -36,7 +36,7 @@ class ClientController {
     }
 
 
-    @PostMapping("/new")
+    @PostMapping
     public ResponseEntity<ClientDto> newClient(@Valid @RequestBody ClientDto clientDto) {
         // Return the created object, not the password
         ClientDto created = clientService.addNewClient(clientDto);
