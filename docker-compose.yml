@@ -54,20 +54,18 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
-  # --- LOCAL S3 (MinIO) ---
-  minio:
-    image: quay.io/minio/minio
-    container_name: minio_container
-    restart: always
+  # --- LOCAL S3 (rustfs) ---
+  rustfs:
+    image: rustfs/rustfs:1.0.0-alpha.89-glibc
     ports:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: shegami
-      MINIO_ROOT_PASSWORD: 123456789
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
     volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
+      - rustfs_data:/data
+      - rustfs_logs:/logs
 
   # --- LOCLA MAILING SMTP FOR SENDING AND CATCHING ALL OUTGOING EMAILS
   mailhog:
@@ -87,4 +85,5 @@ volumes:
   pgadmin-data:
   redis_data:
   redisinsight_data:
-  minio_data: # Persistence for your files
+  rustfs_data:
+  rustfs_logs:
