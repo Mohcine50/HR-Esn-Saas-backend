@@ -31,6 +31,12 @@ public class UploadFile extends BaseTenantEntity {
     @JoinColumn(name = "uploader_id")
     private User uploader;
 
+    @Column(name = "is_public", nullable = false)
+    private boolean isPublic = false;
+
+    @Column(name = "public_url")
+    private String publicUrl;
+
 
     @Id
     @Column(name = "file_id", nullable = false)

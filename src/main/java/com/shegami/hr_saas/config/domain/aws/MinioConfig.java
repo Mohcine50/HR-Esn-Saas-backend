@@ -29,31 +29,27 @@ public class MinioConfig {
     @Value("${aws.s3.region}")
     private String region;
 
-
     @Bean
     public S3Client getS3Client() {
         return S3Client.builder()
                 .region(Region.of(region))
                 .endpointOverride(URI.create(endpoint))
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey,secretKey)))
-                .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(true)
-                        .build())
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKey, secretKey)))
+                .forcePathStyle(true)
                 .build();
     }
 
     @Bean
     public S3Presigner getS3Presigner() {
         return S3Presigner.builder()
-                .endpointOverride(URI.create(endpoint))
                 .region(Region.of(region))
+                .endpointOverride(URI.create(endpoint))
                 .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(accessKey, secretKey)
-                ))
+                        AwsBasicCredentials.create(accessKey, secretKey)))
                 .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(true) // Crucial for MinIO
+                        .pathStyleAccessEnabled(true)
                         .build())
                 .build();
     }
-
 }

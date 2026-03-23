@@ -14,4 +14,6 @@ public interface UploadService {
     String generateDownloadUrl(String fileId);
     UploadFile getUploadFile(String fileId);
     Set<UploadFile> getUploadFiles(Set<String> fileIds);
+
+    String resolveUrl(UploadFile file);
 }

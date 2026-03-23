@@ -24,7 +24,7 @@ public class UserDto implements Serializable {
     String email;
     String phoneNumber;
     List<UserRoleDto> roles;
-    UploadFile imageUrl;
+    String profileUrl;
     UserStatus status;
     LocalDateTime lastLoginAt;
     Boolean isEmailVerified;
