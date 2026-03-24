@@ -23,6 +23,10 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
+import com.shegami.hr_saas.modules.upload.service.UploadService;
+import com.shegami.hr_saas.modules.upload.mapper.FileType;
+import com.shegami.hr_saas.modules.upload.entity.UploadFile;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,6 +35,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final TimesheetRepository timesheetRepository;
     private final PdfGeneratorService pdfGeneratorService;
+    private final UploadService uploadService;
 
     @RabbitListener(queues = RabbitMQConfig.BILLING_QUEUE)
     @Transactional
@@ -103,10 +108,22 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Generate PDF
         try {
             byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
-            // TODO: Upload pdfBytes via UploadService to S3 and save the pdfS3Key to the Invoice.
-            log.info("[Billing] Successfully generated PDF for Invoice ID: {} (Size: {} bytes)", savedInvoice.getInvoiceId(), pdfBytes.length);
+            UploadFile uploadFile = uploadService.uploadInternalFile(
+                    pdfBytes,
+                    savedInvoice.getInvoiceNumber() + ".pdf",
+                    FileType.INVOICE,
+                    "application/pdf",
+                    savedInvoice.getTenant(),
+                    savedInvoice.getCreatedBy()
+            );
+            
+            savedInvoice.setInvoiceFile(uploadFile);
+            savedInvoice.setPdfS3Key(uploadFile.getS3Key());
+            invoiceRepository.save(savedInvoice);
+            
+            log.info("[Billing] Successfully generated and uploaded PDF for Invoice ID: {} (Size: {} bytes, S3Key: {})", savedInvoice.getInvoiceId(), pdfBytes.length, uploadFile.getS3Key());
         } catch (Exception e) {
-            log.error("[Billing] Failed to generate PDF for Invoice ID: {}", savedInvoice.getInvoiceId(), e);
+            log.error("[Billing] Failed to generate/upload PDF for Invoice ID: {}", savedInvoice.getInvoiceId(), e);
         }
     }
 }

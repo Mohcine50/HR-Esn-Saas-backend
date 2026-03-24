@@ -8,6 +8,10 @@ import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
 import java.util.Set;
 
+import com.shegami.hr_saas.modules.auth.entity.Tenant;
+import com.shegami.hr_saas.modules.auth.entity.User;
+import com.shegami.hr_saas.modules.upload.mapper.FileType;
+
 public interface UploadService {
     UploadResponse initiateUpload(UploadRequest uploadRequest);
     void completeUpload(String fileId);
@@ -16,4 +20,6 @@ public interface UploadService {
     Set<UploadFile> getUploadFiles(Set<String> fileIds);
 
     String resolveUrl(UploadFile file);
+
+    UploadFile uploadInternalFile(byte[] content, String fileName, FileType fileType, String contentType, Tenant tenant, User uploader);
 }

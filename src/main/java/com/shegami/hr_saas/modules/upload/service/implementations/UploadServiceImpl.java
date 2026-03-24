@@ -216,4 +216,39 @@ public class UploadServiceImpl implements UploadService {
             throw e;
         }
     }
+
+    @Transactional
+    @Override
+    public UploadFile uploadInternalFile(byte[] content, String fileName, FileType fileType, String contentType, Tenant tenant, User uploader) {
+        boolean isPublic = PUBLIC_TYPES.contains(fileType);
+        String prefix = isPublic ? "public" : "private";
+        
+        String s3Key = String.format("%s/%s/%s/%s-%s", prefix, tenant.getTenantId(), fileType.name().toLowerCase(), UUID.randomUUID(), fileName);
+
+        log.info("[Upload] Internal upload | tenantId={} fileType={} key={}", tenant.getTenantId(), fileType, s3Key);
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(s3Key)
+                .contentType(contentType)
+                .acl(isPublic ? ObjectCannedACL.PUBLIC_READ : ObjectCannedACL.PRIVATE)
+                .build();
+
+        s3Client.putObject(putObjectRequest, software.amazon.awssdk.core.sync.RequestBody.fromBytes(content));
+
+        String publicUrl = isPublic ? "%s/%s/%s".formatted(endpoint, bucketName, s3Key) : null;
+
+        UploadFile file = new UploadFile();
+        file.setFileName(fileName);
+        file.setFileType(fileType);
+        file.setContentType(contentType);
+        file.setS3Key(s3Key);
+        file.setPublic(isPublic);
+        file.setPublicUrl(publicUrl);
+        file.setStatus(FileStatus.AVAILABLE);
+        file.setUploader(uploader);
+        file.setTenant(tenant);
+
+        return uploadFileRepository.save(file);
+    }
 }
