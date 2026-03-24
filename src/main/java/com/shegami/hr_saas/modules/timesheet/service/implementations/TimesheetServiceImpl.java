@@ -24,6 +24,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,6 +44,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     private final TimesheetMapper mapper;
     private final EmployeeRepository employeeRepository;
     private final TenantService tenantService;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     @Override
@@ -193,6 +196,16 @@ public class TimesheetServiceImpl implements TimesheetService {
         Timesheet saved = timesheetRepository.save(timesheet);
         log.info("[Timesheet] Timesheet review completed | timesheetId={} newStatus={} reviewerId={}",
                 timesheetId, saved.getStatus(), userId);
+
+        if (saved.getStatus() == TimesheetStatus.APPROVED) {
+            TimesheetApprovedEvent event = new TimesheetApprovedEvent(
+                    saved.getTimesheetId(),
+                    saved.getTenant().getTenantId(),
+                    saved.getMission().getMissionId()
+            );
+            rabbitTemplate.convertAndSend(RabbitMQConfig.BILLING_EXCHANGE, "billing.timesheet.approved", event);
+            log.info("[Timesheet] Published TimesheetApprovedEvent | timesheetId={}", saved.getTimesheetId());
+        }
 
         return mapper.toResponse(saved);
     }
