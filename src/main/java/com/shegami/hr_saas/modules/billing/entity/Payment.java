@@ -34,7 +34,7 @@ public class Payment extends BaseTenantEntity {
     @Column(name = "payment_id", nullable = false)
     private String paymentId;
     @PrePersist
-    public void generateMissionId() {
+    public void generatePaymentId() {
         if (this.paymentId == null) {
             this.paymentId = "PM-" + UUID.randomUUID();
         }

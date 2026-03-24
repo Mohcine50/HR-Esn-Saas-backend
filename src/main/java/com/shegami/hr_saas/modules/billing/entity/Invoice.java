@@ -3,6 +3,7 @@ package com.shegami.hr_saas.modules.billing.entity;
 import com.shegami.hr_saas.modules.billing.enums.InvoiceStatus;
 import com.shegami.hr_saas.modules.mission.entity.Client;
 import com.shegami.hr_saas.modules.upload.entity.UploadFile;
+import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
 import com.shegami.hr_saas.shared.entity.BaseTenantEntity;
 import jakarta.persistence.*;
 import lombok.Setter;
@@ -10,6 +11,8 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -47,11 +50,17 @@ public class Invoice extends BaseTenantEntity {
 
     private String pdfS3Key;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Timesheet timesheet;
+
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<InvoiceLine> invoiceLines = new HashSet<>();
+
     @Id
     @Column(name = "invoice_id", nullable = false)
     private String invoiceId;
     @PrePersist
-    public void generateMissionId() {
+    public void generateInvoiceId() {
         if (this.invoiceId == null) {
             this.invoiceId = "INV-" + UUID.randomUUID();
         }
