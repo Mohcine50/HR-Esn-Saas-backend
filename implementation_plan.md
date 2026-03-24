@@ -40,16 +40,25 @@ Here is the proposed continuation plan to help you get back on track:
 *   *Task:* Implement PDF Generation (using Thymeleaf/PDFBox) for invoices.
 *   *Task:* Connect Timesheets to Billing: When a timesheet is marked as `APPROVED`, it should trigger (or queue) invoice generation.
 
-### Phase 2: Reporting & Analytics (Sprint 6)
+### Phase 2: Notification System & Real-Time Delivery (Sprint 6)
+*   *Current Status:* `Notification` entity exists and RabbitMQ `notification.exchange` is configured, but `NotificationServiceImpl` is empty and there is no Controller.
+*   *Task:* Implement `NotificationRepository` and `NotificationController` with Server-Sent Events (SSE) endpoint `/stream` for real-time delivery (no extra dependencies needed).
+*   *Task:* Implement `NotificationConsumer` (RabbitMQ) to delegate to `NotificationService`.
+*   *Task:* Emit RabbitMQ Notification Events when:
+    *   Assigned to a Mission (`MissionService`).
+    *   Timesheet Actions: submitted, approved, rejected (`TimesheetService`).
+    *   Invoice Generated (`InvoiceService`).
+
+### Phase 3: Reporting & Analytics (Sprint 7)
 *   *Current Status:* The `reporting` module directory exists but is completely empty.
 *   *Task:* Create materialized views or aggregates for timesheets.
 *   *Task:* Build endpoints to calculate utilization rates (`/reports/utilization`) and revenue (`/reports/revenue`).
 
-### Phase 3: System Administration & Configuration (Sprint 8)
+### Phase 4: System Administration & Configuration (Sprint 8)
 *   *Current Status:* No global system settings module exists.
 *   *Task:* Add a module to manage global metadata like tax rates (TVA), invoicing templates, and company-wide defaults.
 
-### Phase 4: Missing CI/CD and DevOps (Sprint 0/8)
+### Phase 5: Missing CI/CD and DevOps (Sprint 0/8)
 *   *Current Status:* You have `docker-compose.yml`, but GitHub Actions pipelines (CI/CD) and production deployment scripts (like Kubernetes definitions or advanced Docker swarms) are not fully visible in the root directory.
 
 ---
