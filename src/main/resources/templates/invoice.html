@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Invoice</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
+        }
+        .container {
+            width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            width: 100%;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+        }
+        .header-table {
+            width: 100%;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .company-details {
+            text-align: right;
+            font-size: 13px;
+        }
+        .client-details {
+            margin-top: 30px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .invoice-meta {
+            margin-bottom: 30px;
+        }
+        .invoice-meta span {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        table.items th, table.items td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        table.items th {
+            background-color: #0056b3;
+            color: white;
+            font-weight: bold;
+        }
+        .totals {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .totals td {
+            padding: 8px;
+            text-align: right;
+        }
+        .totals .label {
+            font-weight: bold;
+            width: 80%;
+        }
+        .totals .value {
+            width: 20%;
+        }
+        .total-row {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <table class="header-table">
+            <tr>
+                <td>
+                    <h1 style="color: #0056b3; margin:0;">INVOICE</h1>
+                    <div style="font-size: 18px; color: #666;" th:text="${invoice.invoiceNumber}">INV-0000</div>
+                </td>
+                <td class="company-details">
+                    <strong th:text="${invoice.tenant.name}">Company Name</strong><br/>
+                    IT & Consulting Services<br/>
+                    <span th:text="${invoice.tenant.domain}">domain.com</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="client-details">
+        <strong>Billed To:</strong><br/>
+        <span th:text="${invoice.clientNameAtBilling}">Client Name</span><br/>
+        <span th:text="${invoice.clientAddressAtBilling}">Client Address</span><br/>
+        Vat Number: <span th:text="${invoice.vatNumberAtBilling}">VAT12345</span>
+    </div>
+
+    <div class="invoice-meta">
+        <div><span>Date of Issue:</span> <span style="font-weight:normal;" th:text="${invoice.issueDate}">2026-01-01</span></div>
+        <div><span>Due Date:</span> <span style="font-weight:normal;" th:text="${invoice.dueDate}">2026-01-31</span></div>
+    </div>
+
+    <table class="items">
+        <thead>
+        <tr>
+            <th>Description</th>
+            <th>Quantity (Days)</th>
+            <th>Unit Price (TJM)</th>
+            <th>Total</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="line : ${invoice.invoiceLines}">
+            <td th:text="${line.description}">Development Services</td>
+            <td th:text="${line.quantity}">20</td>
+            <td th:text="${line.unitPrice} + ' €'">500.00 €</td>
+            <td th:text="${line.totalLineAmount} + ' €'">10000.00 €</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td class="label">Subtotal:</td>
+            <td class="value" th:text="${invoice.subTotal} + ' €'">10000.00 €</td>
+        </tr>
+        <tr>
+            <td class="label">VAT Amount:</td>
+            <td class="value" th:text="${invoice.vatAmount} + ' €'">2000.00 €</td>
+        </tr>
+        <tr class="total-row">
+            <td class="label">Total Due:</td>
+            <td class="value" th:text="${invoice.totalAmount} + ' €'">12000.00 €</td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        <p>Thank you for your business!</p>
+        <p>Please make payment by the due date as indicated above.</p>
+    </div>
+</div>
+</body>
+</html>
