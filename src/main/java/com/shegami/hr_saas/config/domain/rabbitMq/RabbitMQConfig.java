@@ -225,4 +225,50 @@ public class RabbitMQConfig {
                 .to(emailCriticalDlqExchange())
                 .with(EMAIL_CRITICAL_DLQ_ROUTING_KEY);
     }
+
+    // ==================== BILLING EVENTS ====================
+
+    public static final String BILLING_EXCHANGE = "billing.exchange";
+    public static final String BILLING_QUEUE = "billing.queue";
+    public static final String BILLING_ROUTING_KEY = "billing.#";
+    public static final String BILLING_DLQ_EXCHANGE = "billing.dlq.exchange";
+    public static final String BILLING_DLQ_QUEUE = "billing.dlq.queue";
+    public static final String BILLING_DLQ_ROUTING_KEY = "billing.dlq";
+
+    @Bean
+    public TopicExchange billingExchange() {
+        return new TopicExchange(BILLING_EXCHANGE);
+    }
+
+    @Bean
+    public Queue billingQueue() {
+        return QueueBuilder.durable(BILLING_QUEUE)
+                .withArgument("x-dead-letter-exchange", BILLING_DLQ_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", BILLING_DLQ_ROUTING_KEY)
+                .build();
+    }
+
+    @Bean
+    public Binding billingBinding() {
+        return BindingBuilder.bind(billingQueue())
+                .to(billingExchange())
+                .with(BILLING_ROUTING_KEY);
+    }
+
+    @Bean
+    public TopicExchange billingDlqExchange() {
+        return new TopicExchange(BILLING_DLQ_EXCHANGE);
+    }
+
+    @Bean
+    public Queue billingDlqQueue() {
+        return QueueBuilder.durable(BILLING_DLQ_QUEUE).build();
+    }
+
+    @Bean
+    public Binding billingDlqBinding() {
+        return BindingBuilder.bind(billingDlqQueue())
+                .to(billingDlqExchange())
+                .with(BILLING_DLQ_ROUTING_KEY);
+    }
 }
