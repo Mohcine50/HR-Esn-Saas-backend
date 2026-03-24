@@ -12,9 +12,11 @@ import com.shegami.hr_saas.modules.timesheet.dto.TimesheetApprovedEvent;
 import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
 import com.shegami.hr_saas.modules.timesheet.entity.TimesheetEntry;
 import com.shegami.hr_saas.modules.timesheet.repository.TimesheetRepository;
+import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final TimesheetRepository timesheetRepository;
     private final PdfGeneratorService pdfGeneratorService;
     private final UploadService uploadService;
+    private final RabbitTemplate rabbitTemplate;
 
     @RabbitListener(queues = RabbitMQConfig.BILLING_QUEUE)
     @Transactional
@@ -122,6 +125,18 @@ public class InvoiceServiceImpl implements InvoiceService {
             invoiceRepository.save(savedInvoice);
             
             log.info("[Billing] Successfully generated and uploaded PDF for Invoice ID: {} (Size: {} bytes, S3Key: {})", savedInvoice.getInvoiceId(), pdfBytes.length, uploadFile.getS3Key());
+
+            if (timesheet.getMission().getAccountManager() != null && timesheet.getMission().getAccountManager().getUser() != null) {
+                NotificationMessage msg = NotificationMessage.builder()
+                        .userId(timesheet.getMission().getAccountManager().getUser().getUserId())
+                        .notificationType("INVOICE_GENERATED")
+                        .title("Invoice Automatically Generated")
+                        .message("An invoice for the mission '" + timesheet.getMission().getTitle() + "' was successfully generated.")
+                        .entityType("INVOICE")
+                        .entityId(savedInvoice.getInvoiceId())
+                        .build();
+                rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.invoice.generated", msg);
+            }
         } catch (Exception e) {
             log.error("[Billing] Failed to generate/upload PDF for Invoice ID: {}", savedInvoice.getInvoiceId(), e);
         }

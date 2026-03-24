@@ -27,11 +27,13 @@ import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
 import com.shegami.hr_saas.modules.mission.repository.ProjectRepository;
 import com.shegami.hr_saas.modules.mission.service.*;
-import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import com.shegami.hr_saas.modules.upload.service.UploadService;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
+import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
+import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -62,7 +64,8 @@ public class MissionServiceImpl implements MissionService {
     private final LabelsService labelsService;
     private final ProjectRepository projectRepository;
 
-    private final MissionActivityService   activityService; // ← injected
+    private final MissionActivityService activityService;
+    private final RabbitTemplate rabbitTemplate;
 
     // ── Read ──────────────────────────────────────────────────────────────────
 
@@ -342,6 +345,18 @@ public class MissionServiceImpl implements MissionService {
                 "consultant", null, consultantFullName,
                 actorId, actorName
         );
+
+        NotificationMessage msg = NotificationMessage.builder()
+                .userId(consultant.getUser().getUserId())
+                .notificationType("MISSION_ASSIGNED")
+                .title("New Mission Assigned")
+                .message("You have been assigned to the mission: " + mission.getTitle())
+                .entityType("MISSION")
+                .entityId(missionId)
+                .actorId(actorId)
+                .actorName(actorName)
+                .build();
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.mission.assigned", msg);
 
         log.info("[Mission] Consultant assigned | missionId={} consultantId={} name={}",
                 missionId, consultantId, consultantFullName);

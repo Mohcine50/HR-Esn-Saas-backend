@@ -14,6 +14,10 @@ import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
 import com.shegami.hr_saas.modules.timesheet.entity.TimesheetEntry;
 import com.shegami.hr_saas.modules.timesheet.enums.TimesheetStatus;
 import com.shegami.hr_saas.modules.timesheet.exceptions.TimesheetNotFoundException;
+import com.shegami.hr_saas.modules.mission.entity.Consultant;
+import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
+import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
+import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
 import com.shegami.hr_saas.modules.timesheet.mapper.TimesheetMapper;
 import com.shegami.hr_saas.modules.timesheet.repository.TimesheetRepository;
 import com.shegami.hr_saas.modules.timesheet.service.TimesheetService;
@@ -44,6 +48,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     private final TimesheetMapper mapper;
     private final EmployeeRepository employeeRepository;
     private final TenantService tenantService;
+    private final ConsultantRepository consultantRepository;
     private final RabbitTemplate rabbitTemplate;
 
     @Transactional
@@ -51,7 +56,11 @@ public class TimesheetServiceImpl implements TimesheetService {
     public TimesheetResponse createTimesheet(CreateTimesheetRequest req) {
 
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        String consultantId = UserContextHolder.getCurrentUserContext().tenantId();
+        String userId = UserContextHolder.getCurrentUserContext().userId();
+
+        Consultant consultant = consultantRepository.findByUserUserId(userId)
+                .orElseThrow(() -> new ConsultantNotFoundException("Consultant not found for user: " + userId));
+        String consultantId = consultant.getConsultantId();
 
         log.info("[Timesheet] Creating timesheet | tenantId={} missionId={} consultantId={} period={}/{}",
                 tenantId, req.missionId(), consultantId, req.month(), req.year());
@@ -80,6 +89,7 @@ public class TimesheetServiceImpl implements TimesheetService {
         timesheet.setYear(req.year());
         timesheet.setStatus(TimesheetStatus.DRAFT);
         timesheet.setTenant(tenant);
+        timesheet.setConsultant(consultant);
 
         Timesheet saved = timesheetRepository.save(timesheet);
         log.info("[Timesheet] Timesheet created | timesheetId={} missionId={} consultantId={} period={}/{}",
@@ -146,6 +156,20 @@ public class TimesheetServiceImpl implements TimesheetService {
         Timesheet saved = timesheetRepository.save(timesheet);
         log.info("[Timesheet] Timesheet submitted | timesheetId={}", timesheetId);
 
+        if (saved.getMission().getAccountManager() != null && saved.getMission().getAccountManager().getUser() != null) {
+            String managerUserId = saved.getMission().getAccountManager().getUser().getUserId();
+            NotificationMessage msg = NotificationMessage.builder()
+                    .userId(managerUserId)
+                    .notificationType("TIMESHEET_SUBMITTED")
+                    .title("Timesheet Submitted for Review")
+                    .message("A timesheet was submitted by " + (saved.getConsultant() != null ? saved.getConsultant().getFirstName() : "a consultant") + " for mission '" + saved.getMission().getTitle() + "'.")
+                    .entityType("TIMESHEET")
+                    .entityId(saved.getTimesheetId())
+                    .actorId(UserContextHolder.getCurrentUserContext().userId())
+                    .build();
+            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.timesheet.submitted", msg);
+        }
+
         return mapper.toResponse(saved);
     }
 
@@ -205,6 +229,21 @@ public class TimesheetServiceImpl implements TimesheetService {
             );
             rabbitTemplate.convertAndSend(RabbitMQConfig.BILLING_EXCHANGE, "billing.timesheet.approved", event);
             log.info("[Timesheet] Published TimesheetApprovedEvent | timesheetId={}", saved.getTimesheetId());
+        }
+
+        if (saved.getConsultant() != null && saved.getConsultant().getUser() != null) {
+            String consultantUserId = saved.getConsultant().getUser().getUserId();
+            String statusVerb = saved.getStatus() == TimesheetStatus.APPROVED ? "approved" : "rejected";
+            NotificationMessage msg = NotificationMessage.builder()
+                    .userId(consultantUserId)
+                    .notificationType("TIMESHEET_REVIEWED")
+                    .title("Timesheet " + (saved.getStatus() == TimesheetStatus.APPROVED ? "Approved" : "Rejected"))
+                    .message("Your timesheet for mission '" + saved.getMission().getTitle() + "' was \b" + statusVerb + "\b.")
+                    .entityType("TIMESHEET")
+                    .entityId(saved.getTimesheetId())
+                    .actorId(userId)
+                    .build();
+            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.timesheet.reviewed", msg);
         }
 
         return mapper.toResponse(saved);
