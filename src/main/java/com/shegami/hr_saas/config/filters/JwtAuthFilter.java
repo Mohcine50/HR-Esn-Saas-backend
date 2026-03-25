@@ -31,25 +31,22 @@ import java.util.*;
 import static com.shegami.hr_saas.shared.util.RequestHandler.resolveToken;
 import static com.shegami.hr_saas.shared.util.RequestHandler.writeResponse;
 
-
 @AllArgsConstructor
 @Component
 @Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private static final Set<String> PUBLIC_ENDPOINTS = Set.of( "/api/auth/verify", "/api/auth/login", "/api/auth/signup", "/v3/api-docs", "/swagger-ui/", "/api/invitations/accept", "/api/invitations/validate" );
+    private static final Set<String> PUBLIC_ENDPOINTS = Set.of("/api/auth/verify", "/api/auth/login",
+            "/api/auth/signup", "/v3/api-docs", "/swagger-ui/", "/api/invitations/accept", "/api/invitations/validate",
+            "/ws");
 
     private final JwtDecoder jwtDecoder;
-    private final UserDetailsService userDetailsService;
-    private final AuthenticationManager authenticationManager;
     private final UserService userService;
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException
-    {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
         String jwtToken;
         boolean tokenExpired;
@@ -63,9 +60,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-
         // get the token from header [Authorization bearer] instead of cookies
-        if (isWebsocketEndpoint(requestedURI)){
+        if (isWebsocketEndpoint(requestedURI)) {
             String bearerToken = request.getHeader("Authorization");
             if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
                 jwtToken = bearerToken.substring(7);
@@ -75,8 +71,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } else {
             jwtToken = resolveToken(request);
         }
-
-
         if (jwtToken == null) {
             jsonObject.addProperty("Message", "NO TOKEN PROVIDED");
             writeResponse(response, HttpServletResponse.SC_UNAUTHORIZED, jsonObject);
@@ -94,7 +88,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 writeResponse(response, HttpServletResponse.SC_UNAUTHORIZED, jsonObject);
                 return;
             }
-
 
             issuerAt = jwt.getIssuedAt();
             expiredAt = jwt.getExpiresAt();
@@ -119,10 +112,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     user.getEmail(),
                     null,
-                    authorities
-            );
-
-
+                    authorities);
 
             UserContextHolder.setCurrentUserContext(new UserContext(userId, tenantId, user.getEmail(), jwtToken));
 
@@ -133,7 +123,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } catch (JwtException exception) {
             jsonObject.addProperty("Message", "INVALID TOKEN");
             writeResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, jsonObject);
-        }finally {
+        } finally {
             UserContextHolder.clearCurrentUserContext();
         }
 

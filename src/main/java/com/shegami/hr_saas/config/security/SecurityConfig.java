@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.config.security;
 
-
 import com.shegami.hr_saas.config.filters.JwtAuthFilter;
 import com.shegami.hr_saas.shared.exception.CustomAccessDeniedHandler;
 import lombok.AllArgsConstructor;
@@ -21,7 +20,6 @@ import java.util.regex.Pattern;
 
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
-
 @EnableWebSecurity
 @Configuration
 @AllArgsConstructor
@@ -33,7 +31,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
-
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
@@ -42,8 +39,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/invitations/accept", "/api/invitations/validate").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .requestMatchers("/ws/**").permitAll()
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .httpBasic(Customizer.withDefaults())
