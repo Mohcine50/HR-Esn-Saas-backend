@@ -40,12 +40,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-
 @AllArgsConstructor
 @Service
 @Slf4j
 public class AuthServiceImpl implements AuthService {
-
 
     private final JwtEncoder jwtEncoder;
     private final AuthenticationManager authenticationManager;
@@ -83,57 +81,53 @@ public class AuthServiceImpl implements AuthService {
                 .phoneNumber(registerDto.getPhone())
                 .build(), tenant);
 
-
-
         String jwtAccessToken = AuthUser(registerDto.getEmail(), registerDto.getPassword());
 
-
         eventPublisher.publishVerificationEmail(EmailVerificationMessage.builder()
-                        .recipientEmail(registerDto.getEmail())
-                        .recipientFirstName(registerDto.getFirstName())
-                        .verificationType(VerificationType.EMAIL_VERIFICATION)
-                        .userId(createdUser.getUserId())
-                        .verificationToken(TokenGenerator.generateToken())
-                        .companyName(registerDto.getCompanyName())
-                        .tenantId(createdUser.getTenant().getTenantId())
+                .recipientEmail(registerDto.getEmail())
+                .recipientFirstName(registerDto.getFirstName())
+                .verificationType(VerificationType.EMAIL_VERIFICATION)
+                .userId(createdUser.getUserId())
+                .verificationToken(TokenGenerator.generateToken())
+                .companyName(registerDto.getCompanyName())
+                .tenantId(createdUser.getTenant().getTenantId())
                 .build());
 
         return new RegisterResponseDto(jwtAccessToken, "REGISTER SUCCESSFULLY");
     }
 
-
     private String AuthUser(String email, String password) {
 
-
-        User user = userService.findUserByEmail(email).orElseThrow(() -> new UserNotFoundException("User NOT FOUND WITH email: " + email));
-
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User NOT FOUND WITH email: " + email));
 
         user.setLastLoginAt(LocalDateTime.now());
         userService.updateUser(user);
 
-
         List<UserRoles> roles = user.getRoles().stream().map(UserRole::getName).toList();
 
-
-        Collection<GrantedAuthority> authorities = new ArrayList<>(roles.stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).toList());
+        Collection<GrantedAuthority> authorities = new ArrayList<>(
+                roles.stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).toList());
 
         Instant instant = Instant.now();
 
-        UserDetails userDetails = new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), authorities);
+        UserDetails userDetails = new org.springframework.security.core.userdetails.User(user.getEmail(),
+                user.getPassword(), authorities);
 
-
-        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder().subject(user.getUserId()).issuedAt(instant).expiresAt(instant.plus(60, ChronoUnit.MINUTES)).issuer("auth-service").claim("roles", roles).claim("X-Tenant-ID", user.getTenant().getTenantId()).build();
-
+        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder().subject(user.getUserId()).issuedAt(instant)
+                .expiresAt(instant.plus(60, ChronoUnit.MINUTES)).issuer("auth-service").claim("roles", roles)
+                .claim("X-Tenant-ID", user.getTenant().getTenantId()).build();
 
         Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSet));
 
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password, authorities));
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password, authorities));
 
-        UserContextHolder.setCurrentUserContext(new UserContext(user.getUserId(), user.getTenant().getTenantId(), user.getEmail()));
+        UserContextHolder.setCurrentUserContext(new UserContext(user.getUserId(), user.getTenant().getTenantId(),
+                user.getEmail(), jwt.getTokenValue()));
 
         return jwt.getTokenValue();
     }
-
 
     @Override
     public UserDto getCurrentUserInfo(String email) {

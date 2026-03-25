@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.auth.controller;
 
-
 import com.shegami.hr_saas.modules.auth.dto.*;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
@@ -13,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class AuthController {
     private final SecurityTokenService securityTokenService;
 
     @PostMapping("login")
-    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto,HttpServletResponse response) {
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto, HttpServletResponse response) {
         LoginResponseDto loginResponseDto = authService.login(loginDto);
         Cookie cookie = setAccessTokenCookie(loginResponseDto.accessToken());
         response.addCookie(cookie);
@@ -50,17 +50,18 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserDto> me(Authentication authentication) {
+    public ResponseEntity<Object> me(Authentication authentication) {
 
         String email = authentication.getName();
 
         UserDto userInfo = authService.getCurrentUserInfo(email);
-
-        return ResponseEntity.ok(userInfo);
+        String accessToken = UserContextHolder.getCurrentUserContext().jwtToken();
+        return ResponseEntity.ok(Map.of("user", userInfo, "accessToken", accessToken));
     }
 
     @PostMapping("signup")
-    public ResponseEntity<RegisterResponseDto> register(@RequestBody RegisterDto registerDto, HttpServletResponse response){
+    public ResponseEntity<RegisterResponseDto> register(@RequestBody RegisterDto registerDto,
+            HttpServletResponse response) {
 
         RegisterResponseDto register = authService.register(registerDto);
 
@@ -69,19 +70,18 @@ public class AuthController {
 
         return new ResponseEntity<>(register, HttpStatus.OK);
     }
+
     @PostMapping("refresh")
-    public ResponseEntity<Object> refresh(RefreshDto refreshDto){
+    public ResponseEntity<Object> refresh(RefreshDto refreshDto) {
         return null;
     }
-
 
     @GetMapping("/verify")
     public ResponseEntity<Map<String, Object>> verifyAccount(@RequestParam String token) {
         boolean valid = securityTokenService.verifyAccount(token);
         return ResponseEntity.ok(Map.of(
                 "verified", valid,
-                "message", valid ? "VERIFIED" : "INVALID_OR_EXPIRED"
-        ));
+                "message", valid ? "VERIFIED" : "INVALID_OR_EXPIRED"));
     }
 
 }

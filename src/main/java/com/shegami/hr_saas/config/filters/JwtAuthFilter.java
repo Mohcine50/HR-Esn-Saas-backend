@@ -64,8 +64,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-
-        jwtToken = resolveToken(request);
+        // get the token from header [Authorization bearer] instead of cookies
+        if (isWebsocketEndpoint(requestedURI)){
+            String bearerToken = request.getHeader("Authorization");
+            if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+                jwtToken = bearerToken.substring(7);
+            } else {
+                jwtToken = null;
+            }
+        } else {
+            jwtToken = resolveToken(request);
+        }
 
 
         if (jwtToken == null) {
@@ -115,7 +124,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 
 
-            UserContextHolder.setCurrentUserContext(new UserContext(userId, tenantId, user.getEmail()));
+            UserContextHolder.setCurrentUserContext(new UserContext(userId, tenantId, user.getEmail(), jwtToken));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -132,6 +141,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private boolean isPublicEndpoint(String uri) {
         return PUBLIC_ENDPOINTS.stream().anyMatch(uri::contains);
+    }
+
+    // Method to check if the endpoint is for websocket
+    private boolean isWebsocketEndpoint(String uri) {
+        return uri.startsWith("/ws");
     }
 
 }
