@@ -16,14 +16,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -35,39 +32,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationMapper notificationMapper;
     private final UserRepository userRepository;
 
-    // SSE Emitters map to track connected clients
-    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
-
-    @Override
-    public SseEmitter subscribe() {
-        String userId = UserContextHolder.getCurrentUserContext().userId();
-        log.info("[Notification API] Client subscribing to SSE | userId={}", userId);
-        // Timeout set to 30 minutes
-        SseEmitter emitter = new SseEmitter(1800000L);
-        emitters.put(userId, emitter);
-
-        emitter.onCompletion(() -> {
-            log.debug("[Notification SSE] Connection completed for user {}", userId);
-            emitters.remove(userId);
-        });
-        emitter.onTimeout(() -> {
-            log.debug("[Notification SSE] Connection timeout for user {}", userId);
-            emitters.remove(userId);
-        });
-        emitter.onError((e) -> {
-            log.error("[Notification SSE] Connection error for user {}: {}", userId, e.getMessage());
-            emitters.remove(userId);
-        });
-
-        // Send a dummy event to initialize connection
-        try {
-            emitter.send(SseEmitter.event().name("INIT").data("Connected to Notification Stream"));
-        } catch (IOException e) {
-            emitters.remove(userId);
-        }
-
-        return emitter;
-    }
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public void processNotification(NotificationMessage message) {
@@ -104,18 +69,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void sendToClient(String userId, NotificationDto dto) {
-        SseEmitter emitter = emitters.get(userId);
-        if (emitter != null) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("NOTIFICATION")
-                        .data(dto));
-                log.debug("[Notification SSE] Successfully pushed notification to user {}", userId);
-            } catch (IOException e) {
-                log.error("[Notification SSE] Failed to send notification to user {}", userId, e);
-                emitters.remove(userId);
-            }
-        }
+        log.debug("[Notification STOMP] Pushing notification to user {}", userId);
+        messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", dto);
     }
 
     @Override
