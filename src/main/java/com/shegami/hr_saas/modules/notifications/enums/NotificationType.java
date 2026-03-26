@@ -41,7 +41,13 @@ public enum NotificationType {
     // ==================== ACCOUNT NOTIFICATIONS ====================
     ACCOUNT_UPDATED("Account Updated", "Your account has been updated"),
     PASSWORD_CHANGED("Password Changed", "Your password was changed"),
-    EMAIL_CHANGED("Email Changed", "Your email address was changed");
+    EMAIL_CHANGED("Email Changed", "Your email address was changed"),
+
+    // ==================== INVOICE NOTIFICATIONS ====================
+    INVOICE_GENERATED("Invoice Generated", "An invoice has been generated"),
+    INVOICE_REMINDER("Invoice Reminder", "Don't forget to pay your invoice"),
+    INVOICE_PAID("Invoice Paid", "Your invoice has been paid"),
+    INVOICE_OVERDUE("Invoice Overdue", "Your invoice is overdue");
 
     private final String displayName;
     private final String defaultTitle;
@@ -53,12 +59,12 @@ public enum NotificationType {
 
     public String getColor() {
         return switch (this) {
-            case MISSION_ASSIGNED, PROJECT_ASSIGNED -> "#3B82F6"; // Blue
-            case MISSION_COMPLETED, TIMESHEET_APPROVED -> "#10B981"; // Green
-            case TIMESHEET_REMINDER -> "#F59E0B"; // Orange
+            case MISSION_ASSIGNED, PROJECT_ASSIGNED, INVOICE_GENERATED -> "#3B82F6"; // Blue
+            case MISSION_COMPLETED, TIMESHEET_APPROVED, INVOICE_PAID -> "#10B981"; // Green
+            case TIMESHEET_REMINDER, INVOICE_REMINDER -> "#F59E0B"; // Orange
             case MENTION, COMMENT_REPLY -> "#8B5CF6"; // Purple
+            case INVOICE_OVERDUE -> "#EF4444"; // Red
             default -> "#6B7280"; // Gray
         };
     }
 }
-
