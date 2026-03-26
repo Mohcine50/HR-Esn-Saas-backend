@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.hr.entity;
 
-
 import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.hr.enums.ContractType;
 import com.shegami.hr_saas.modules.hr.enums.EmployeeStatus;
@@ -16,11 +15,8 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "employees",
-        indexes = @Index(columnList = "tenant_id")
-)
+@Table(name = "employees", indexes = @Index(columnList = "tenant_id"))
 public class Employee extends BaseTenantEntity {
-
 
     @OneToOne(fetch = FetchType.EAGER)
     private User user;
@@ -49,6 +45,7 @@ public class Employee extends BaseTenantEntity {
     @Id
     @Column(name = "employee_id", nullable = false)
     private String employeeId;
+
     @PrePersist
     public void generateEmployeeId() {
         if (this.employeeId == null) {

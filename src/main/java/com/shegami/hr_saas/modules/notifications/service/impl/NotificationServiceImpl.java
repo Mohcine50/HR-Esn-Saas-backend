@@ -44,12 +44,12 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notification = new Notification();
         notification.setRecipient(user);
         notification.setTenant(user.getTenant());
-        notification.setNotificationType(NotificationType.valueOf(message.getNotificationType()));
+        notification.setNotificationType(message.getNotificationType());
         notification.setTitle(message.getTitle());
         notification.setMessage(message.getMessage());
-        
+
         if (message.getEntityType() != null) {
-            notification.setEntityType(EntityType.valueOf(message.getEntityType()));
+            notification.setEntityType(message.getEntityType());
         }
         notification.setEntityId(message.getEntityId());
 
@@ -85,9 +85,10 @@ public class NotificationServiceImpl implements NotificationService {
     public void markAsRead(String notificationId) {
         String userId = UserContextHolder.getCurrentUserContext().userId();
 
-        Notification notification = notificationRepository.findByNotificationIdAndRecipient_UserId(notificationId, userId)
+        Notification notification = notificationRepository
+                .findByNotificationIdAndRecipient_UserId(notificationId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found or access denied"));
-        
+
         if (notification.getStatus() == NotificationStatus.UNREAD) {
             notification.setStatus(NotificationStatus.READ);
             notification.setReadAt(LocalDateTime.now());

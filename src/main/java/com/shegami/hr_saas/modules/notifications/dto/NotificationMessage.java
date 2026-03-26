@@ -7,19 +7,21 @@ import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
+import com.shegami.hr_saas.modules.notifications.enums.EntityType;
+import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class NotificationMessage extends BaseMessage {
     private String userId;
-    private String notificationType; // MISSION_ASSIGNED, MENTION, COMMENT, etc.
+    private NotificationType notificationType;
     private String title;
     private String message;
-    private String entityType; // MISSION, TIMESHEET, etc.
+    private EntityType entityType;
     private String entityId;
     private String actorId;
     private String actorName;
     private Map<String, Object> metadata;
 }
-

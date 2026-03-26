@@ -31,6 +31,9 @@ import com.shegami.hr_saas.modules.upload.service.UploadService;
 import com.shegami.hr_saas.shared.exception.ResourceNotFoundException;
 import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
 import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
+import com.shegami.hr_saas.modules.notifications.enums.EntityType;
+import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -205,10 +208,10 @@ public class MissionServiceImpl implements MissionService {
 
                         NotificationMessage msg = NotificationMessage.builder()
                                         .userId(c.getUser().getUserId())
-                                        .notificationType("MISSION_ASSIGNED")
-                                        .title("New Mission Assigned")
+                                        .notificationType(NotificationType.MISSION_ASSIGNED)
+                                        .title(NotificationType.MISSION_ASSIGNED.getDefaultTitle())
                                         .message("You have been assigned to the mission: " + saved.getTitle())
-                                        .entityType("MISSION")
+                                        .entityType(EntityType.MISSION)
                                         .entityId(saved.getMissionId())
                                         .actorId(actorId)
                                         .actorName(actorName)
@@ -363,10 +366,10 @@ public class MissionServiceImpl implements MissionService {
 
                 NotificationMessage msg = NotificationMessage.builder()
                                 .userId(consultant.getUser().getUserId())
-                                .notificationType("MISSION_ASSIGNED")
-                                .title("New Mission Assigned")
+                                .notificationType(NotificationType.MISSION_ASSIGNED)
+                                .title(NotificationType.MISSION_ASSIGNED.getDefaultTitle())
                                 .message("You have been assigned to the mission: " + mission.getTitle())
-                                .entityType("MISSION")
+                                .entityType(EntityType.MISSION)
                                 .entityId(missionId)
                                 .actorId(actorId)
                                 .actorName(actorName)
