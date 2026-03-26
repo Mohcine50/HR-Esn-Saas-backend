@@ -18,6 +18,8 @@ import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
 import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
+import com.shegami.hr_saas.modules.notifications.enums.EntityType;
+import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
 import com.shegami.hr_saas.modules.timesheet.mapper.TimesheetMapper;
 import com.shegami.hr_saas.modules.timesheet.repository.TimesheetRepository;
 import com.shegami.hr_saas.modules.timesheet.service.TimesheetService;
@@ -35,7 +37,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
-
 
 @Service
 @AllArgsConstructor
@@ -98,7 +99,6 @@ public class TimesheetServiceImpl implements TimesheetService {
         return mapper.toResponse(saved);
     }
 
-
     @Transactional
     @Override
     public TimesheetResponse saveEntries(String timesheetId, SaveEntriesRequest req) {
@@ -135,7 +135,6 @@ public class TimesheetServiceImpl implements TimesheetService {
         return mapper.toResponse(saved);
     }
 
-
     @Transactional
     @Override
     public TimesheetResponse submitTimesheet(String timesheetId) {
@@ -156,23 +155,26 @@ public class TimesheetServiceImpl implements TimesheetService {
         Timesheet saved = timesheetRepository.save(timesheet);
         log.info("[Timesheet] Timesheet submitted | timesheetId={}", timesheetId);
 
-        if (saved.getMission().getAccountManager() != null && saved.getMission().getAccountManager().getUser() != null) {
+        if (saved.getMission().getAccountManager() != null
+                && saved.getMission().getAccountManager().getUser() != null) {
             String managerUserId = saved.getMission().getAccountManager().getUser().getUserId();
             NotificationMessage msg = NotificationMessage.builder()
                     .userId(managerUserId)
-                    .notificationType("TIMESHEET_SUBMITTED")
-                    .title("Timesheet Submitted for Review")
-                    .message("A timesheet was submitted by " + (saved.getConsultant() != null ? saved.getConsultant().getFirstName() : "a consultant") + " for mission '" + saved.getMission().getTitle() + "'.")
-                    .entityType("TIMESHEET")
+                    .notificationType(NotificationType.TIMESHEET_SUBMITTED)
+                    .title(NotificationType.TIMESHEET_SUBMITTED.getDefaultTitle())
+                    .message("A timesheet was submitted by "
+                            + (saved.getConsultant() != null ? saved.getConsultant().getFirstName() : "a consultant")
+                            + " for mission '" + saved.getMission().getTitle() + "'.")
+                    .entityType(EntityType.TIMESHEET)
                     .entityId(saved.getTimesheetId())
                     .actorId(UserContextHolder.getCurrentUserContext().userId())
                     .build();
-            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.timesheet.submitted", msg);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.timesheet.submitted",
+                    msg);
         }
 
         return mapper.toResponse(saved);
     }
-
 
     @Transactional
     @Override
@@ -194,12 +196,14 @@ public class TimesheetServiceImpl implements TimesheetService {
         Timesheet timesheet = timesheetRepository
                 .findByIdAndTenant(timesheetId, tenantId)
                 .orElseThrow(() -> {
-                    log.warn("[Timesheet] Timesheet not found for review | timesheetId={} tenantId={}", timesheetId, tenantId);
+                    log.warn("[Timesheet] Timesheet not found for review | timesheetId={} tenantId={}", timesheetId,
+                            tenantId);
                     return new TimesheetNotFoundException("Timesheet not found.");
                 });
 
         if (timesheet.getStatus() != TimesheetStatus.SUBMITTED) {
-            log.warn("[Timesheet] Review rejected — wrong status | timesheetId={} status={}", timesheetId, timesheet.getStatus());
+            log.warn("[Timesheet] Review rejected — wrong status | timesheetId={} status={}", timesheetId,
+                    timesheet.getStatus());
             throw new IllegalStateException("Only SUBMITTED timesheets can be reviewed.");
         }
 
@@ -225,8 +229,7 @@ public class TimesheetServiceImpl implements TimesheetService {
             TimesheetApprovedEvent event = new TimesheetApprovedEvent(
                     saved.getTimesheetId(),
                     saved.getTenant().getTenantId(),
-                    saved.getMission().getMissionId()
-            );
+                    saved.getMission().getMissionId());
             rabbitTemplate.convertAndSend(RabbitMQConfig.BILLING_EXCHANGE, "billing.timesheet.approved", event);
             log.info("[Timesheet] Published TimesheetApprovedEvent | timesheetId={}", saved.getTimesheetId());
         }
@@ -236,10 +239,11 @@ public class TimesheetServiceImpl implements TimesheetService {
             String statusVerb = saved.getStatus() == TimesheetStatus.APPROVED ? "approved" : "rejected";
             NotificationMessage msg = NotificationMessage.builder()
                     .userId(consultantUserId)
-                    .notificationType("TIMESHEET_REVIEWED")
-                    .title("Timesheet " + (saved.getStatus() == TimesheetStatus.APPROVED ? "Approved" : "Rejected"))
-                    .message("Your timesheet for mission '" + saved.getMission().getTitle() + "' was \b" + statusVerb + "\b.")
-                    .entityType("TIMESHEET")
+                    .notificationType(saved.getStatus() == TimesheetStatus.APPROVED ? NotificationType.TIMESHEET_APPROVED : NotificationType.TIMESHEET_REJECTED)
+                    .title(saved.getStatus() == TimesheetStatus.APPROVED ? NotificationType.TIMESHEET_APPROVED.getDefaultTitle() : NotificationType.TIMESHEET_REJECTED.getDefaultTitle())
+                    .message("Your timesheet for mission '" + saved.getMission().getTitle() + "' was \b" + statusVerb
+                            + "\b.")
+                    .entityType(EntityType.TIMESHEET)
                     .entityId(saved.getTimesheetId())
                     .actorId(userId)
                     .build();
@@ -309,7 +313,6 @@ public class TimesheetServiceImpl implements TimesheetService {
         log.debug("[Timesheet] All timesheets fetched | tenantId={} total={}", tenantId, result.getTotalElements());
         return result;
     }
-
 
     /**
      * Only DRAFT or REJECTED timesheets can be edited
