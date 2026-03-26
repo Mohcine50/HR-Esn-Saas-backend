@@ -24,7 +24,6 @@ import java.util.UUID;
 @Table(name = "users")
 public class User extends BaseTenantEntity {
 
-
     private String firstName;
     private String lastName;
 
@@ -36,11 +35,7 @@ public class User extends BaseTenantEntity {
     private String phoneNumber;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private List<UserRole> roles = new ArrayList<>();
 
     @OneToOne
@@ -67,15 +62,19 @@ public class User extends BaseTenantEntity {
     @JoinColumn(name = "settings_id")
     private UserSettings userSettings;
 
-
     @Id
     @Column(name = "user_id", nullable = false)
     private String userId;
+
     @PrePersist
     public void generateUserId() {
         if (this.userId == null) {
             this.userId = "USR-" + UUID.randomUUID();
         }
+    }
+
+    public String getFullName() {
+        return this.firstName + " " + this.lastName;
     }
 
 }
