@@ -52,9 +52,9 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<Object> me(Authentication authentication) {
 
-        String email = authentication.getName();
+        String userId = authentication.getName();
 
-        UserDto userInfo = authService.getCurrentUserInfo(email);
+        UserDto userInfo = authService.getCurrentUserInfo(userId);
         String accessToken = UserContextHolder.getCurrentUserContext().jwtToken();
         return ResponseEntity.ok(Map.of("user", userInfo, "accessToken", accessToken));
     }

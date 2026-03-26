@@ -1,8 +1,6 @@
 package com.shegami.hr_saas.modules.auth.service;
 
-
 import com.shegami.hr_saas.modules.auth.dto.*;
-
 
 public interface AuthService {
 
@@ -10,7 +8,6 @@ public interface AuthService {
 
     RegisterResponseDto register(RegisterDto registerDto);
 
-    UserDto getCurrentUserInfo(String email);
-
+    UserDto getCurrentUserInfo(String userId);
 
 }
