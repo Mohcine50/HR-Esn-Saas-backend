@@ -2,6 +2,7 @@ package com.shegami.hr_saas.modules.notifications.service.impl;
 
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.User;
+import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.notifications.dto.NotificationDto;
 import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
@@ -16,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +42,7 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("[Notification] Processing new message for user {}", message.getUserId());
 
         User user = userRepository.findById(message.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Recipient not found: " + message.getUserId()));
+                .orElseThrow(() -> new UserNotFoundException("Recipient not found: " + message.getUserId()));
 
         Notification notification = new Notification();
         notification.setRecipient(user);
@@ -69,8 +72,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void sendToClient(String userId, NotificationDto dto) {
-        log.debug("[Notification STOMP] Pushing notification to user {}", userId);
-        messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", dto);
+        log.info("[Notification STOMP] Sending to user: {}", userId);
+
+        // This is the most reliable way when using custom principal
+        messagingTemplate.convertAndSendToUser(
+                userId,
+                "/queue/notifications",
+                dto);
     }
 
     @Override

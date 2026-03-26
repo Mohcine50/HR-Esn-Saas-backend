@@ -47,6 +47,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -179,8 +180,7 @@ public class MissionServiceImpl implements MissionService {
 
                 Mission saved = missionRepository.save(mission);
 
-                String actorName = user.getEmployee().getUser().getFirstName() + " "
-                                + user.getEmployee().getUser().getLastName();
+                String actorName = user.getFullName();
 
                 // ── Activity: created ─────────────────────────────────────────────────
                 activityService.log(
@@ -243,7 +243,8 @@ public class MissionServiceImpl implements MissionService {
                 String actorId = UserContextHolder.getCurrentUserContext().userId();
                 String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
 
-                log.info("[Mission] Updating mission | missionId={} actorId={}", missionId, actorId);
+                log.info("[Mission] Updating mission | missionId={} actorId={} for tenant {}", missionId, actorId,
+                                tenantId);
 
                 Mission existing = missionRepository.findById(missionId)
                                 .orElseThrow(() -> {

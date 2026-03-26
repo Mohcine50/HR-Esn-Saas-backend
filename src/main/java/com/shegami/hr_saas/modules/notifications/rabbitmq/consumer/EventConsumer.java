@@ -82,8 +82,7 @@ public class EventConsumer {
                     invitationLink,
                     message.getRole(),
                     message.getCompanyName(),
-                    message.getMetadata()
-            );
+                    message.getMetadata());
 
             log.info("Invitation email sent successfully to: {}", message.getRecipientEmail());
         } catch (Exception e) {
@@ -112,31 +111,29 @@ public class EventConsumer {
                 message.getRecipientEmail(), message.getVerificationType());
 
         securityTokenService.createToken(SecurityTokenDto.builder()
-                        .token(TokenGenerator.encryptToken(message.getVerificationToken()))
-                        .expiresAt(LocalDateTime.now().plusDays(1))
-                        .tenantId(message.getTenantId())
-                        .userId(message.getUserId())
+                .token(TokenGenerator.encryptToken(message.getVerificationToken()))
+                .expiresAt(LocalDateTime.now().plusDays(1))
+                .tenantId(message.getTenantId())
+                .userId(message.getUserId())
                 .build());
 
         try {
 
-            switch (message.getVerificationType()){
+            switch (message.getVerificationType()) {
                 case EMAIL_VERIFICATION -> {
                     String verificationLink = String.format("%s/verify?token=%s", URL, message.getVerificationToken());
                     emailService.sendEmailVerification(
                             message.getRecipientEmail(),
                             message.getRecipientFirstName(),
                             verificationLink,
-                            message.getCompanyName()
-                    );
+                            message.getCompanyName());
                 }
                 case PASSWORD_RESET -> {
                     String resetLink = String.format("%s/reset-password?token=%s", URL, message.getVerificationToken());
                     emailService.sendPasswordResetEmail(
                             message.getRecipientEmail(),
                             message.getRecipientFirstName(),
-                            resetLink
-                    );
+                            resetLink);
                 }
             }
 
@@ -172,16 +169,14 @@ public class EventConsumer {
                     emailService.sendPasswordResetEmail(
                             message.getRecipientEmail(),
                             message.getRecipientFirstName(),
-                            message.getToken()
-                    );
+                            message.getToken());
                     break;
 
                 case "SECURITY_ALERT":
                     emailService.sendSecurityAlertEmail(
                             message.getRecipientEmail(),
                             message.getRecipientFirstName(),
-                            message.getContext()
-                    );
+                            message.getContext());
                     break;
 
                 default:

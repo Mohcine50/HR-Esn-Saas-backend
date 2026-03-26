@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -21,11 +22,6 @@ public abstract class BaseMessage {
         this.tenantId = tenantId;
         this.createdAt = LocalDateTime.now();
         this.retryCount = 0;
+        this.messageId = UUID.randomUUID().toString();
     }
 }
-
-
-
-
-
-
