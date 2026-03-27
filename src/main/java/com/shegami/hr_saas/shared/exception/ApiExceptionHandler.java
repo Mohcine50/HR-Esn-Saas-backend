@@ -1,6 +1,7 @@
 package com.shegami.hr_saas.shared.exception;
 
 import com.shegami.hr_saas.modules.auth.exception.*;
+import com.shegami.hr_saas.modules.billing.exception.InvoiceNotFoundException;
 import com.shegami.hr_saas.modules.hr.exception.*;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
@@ -133,6 +134,13 @@ public class ApiExceptionHandler {
         return build(ErrorCode.TIMESHEET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
+    // ── Billing ──────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(InvoiceNotFoundException.class)
+    public ResponseEntity<ApiException> handleInvoiceNotFound(InvoiceNotFoundException ex) {
+        return build(ErrorCode.INVOICE_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
     // ── Storage ───────────────────────────────────────────────────────────────
 
     @ExceptionHandler(StorageUploadException.class)
@@ -167,9 +175,9 @@ public class ApiExceptionHandler {
                 .toList();
 
         Map<String, Object> body = new HashMap<>();
-        body.put("errorCode",  "VALIDATION_001");
-        body.put("errors",     errors);
-        body.put("timestamp",  new Date());
+        body.put("errorCode", "VALIDATION_001");
+        body.put("errors", errors);
+        body.put("timestamp", new Date());
 
         return ResponseEntity.badRequest().body(body);
     }
@@ -191,8 +199,7 @@ public class ApiExceptionHandler {
                         errorCode.getMessage(),
                         errorCode.getCode(),
                         status,
-                        LocalDate.now()
-                ));
+                        LocalDate.now()));
     }
 
     private ResponseEntity<ApiException> build(String message, String errorCode, HttpStatus status) {
