@@ -1,12 +1,28 @@
 package com.shegami.hr_saas.modules.billing.service;
 
 import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
+import com.shegami.hr_saas.modules.billing.dto.InvoiceDto;
+import com.shegami.hr_saas.modules.billing.dto.PaymentRequest;
+import com.shegami.hr_saas.modules.billing.enums.InvoiceStatus;
 import com.shegami.hr_saas.modules.timesheet.dto.TimesheetApprovedEvent;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface InvoiceService {
     @RabbitListener(queues = RabbitMQConfig.BILLING_QUEUE)
     @Transactional
     void handleTimesheetApproved(TimesheetApprovedEvent event);
+
+    Page<InvoiceDto> getAllInvoices(Pageable pageable);
+
+    InvoiceDto getInvoiceById(String invoiceId);
+
+    void recordPayment(String invoiceId, PaymentRequest request);
+
+    void updateStatus(String invoiceId, InvoiceStatus status);
+
+    String getDownloadUrl(String invoiceId);
 }
