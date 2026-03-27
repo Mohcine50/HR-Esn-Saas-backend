@@ -12,35 +12,28 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/clients")
 @Slf4j
-public
-class ClientController {
+public class ClientController {
 
     private final ClientService clientService;
 
     @GetMapping
     public ResponseEntity<Page<ClientDto>> getAll(
-            @PageableDefault(size = 10) Pageable pageable
-    ) {
+            @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(clientService.getAllClients(pageable));
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<ClientDto> getById(@PathVariable("id") String id) {
         return ResponseEntity.ok(clientService.getClientById(id));
     }
 
-
     @PostMapping
     public ResponseEntity<ClientDto> newClient(@Valid @RequestBody ClientDto clientDto) {
-        // Return the created object, not the password
         ClientDto created = clientService.addNewClient(clientDto);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 }
-

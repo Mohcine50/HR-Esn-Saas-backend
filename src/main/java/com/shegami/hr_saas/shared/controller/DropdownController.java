@@ -15,32 +15,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequiredArgsConstructor
 @RequestMapping("api/dropdown")
 public class DropdownController {
-    private final DropdownService dropdownService;
+        private final DropdownService dropdownService;
 
-    @GetMapping("/projects")
-    public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchProjects(
-            @Valid DropdownSearchRequest request
-    ) {
-        return ResponseEntity.ok(
-                dropdownService.searchProjects(request.getSearch(), request.getLimit())
-        );
-    }
+        @GetMapping("/projects")
+        public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchProjects(
+                        @Valid DropdownSearchRequest request) {
+                return ResponseEntity.ok(
+                                dropdownService.searchProjects(request.getSearch(), request.getLimit()));
+        }
 
-    @GetMapping("/consultants")
-    public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchConsultants(
-            @Valid DropdownSearchRequest request
-    ) {
-        return ResponseEntity.ok(
-                dropdownService.searchConsultants(request.getSearch(), request.getLimit())
-        );
-    }
+        @GetMapping("/consultants")
+        public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchConsultants(
+                        @Valid DropdownSearchRequest request) {
+                return ResponseEntity.ok(
+                                dropdownService.searchConsultants(request.getSearch(), request.getLimit()));
+        }
 
-    @GetMapping("/labels")
-    public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchLabels(
-            @Valid DropdownSearchRequest request
-    ) {
-        return ResponseEntity.ok(
-                dropdownService.searchLabels(request.getSearch(), request.getLimit())
-        );
-    }
+        @GetMapping("/labels")
+        public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchLabels(
+                        @Valid DropdownSearchRequest request) {
+                return ResponseEntity.ok(
+                                dropdownService.searchLabels(request.getSearch(), request.getLimit()));
+        }
+
+        @GetMapping("/clients")
+        public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchClients(
+                        @Valid DropdownSearchRequest request) {
+                return ResponseEntity.ok(
+                                dropdownService.searchClients(request.getSearch(), request.getLimit()));
+        }
 }

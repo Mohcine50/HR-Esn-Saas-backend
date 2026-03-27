@@ -1,6 +1,7 @@
 package com.shegami.hr_saas.shared.service.implementation;
 
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
+import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.LabelRepository;
 import com.shegami.hr_saas.modules.mission.repository.ProjectRepository;
@@ -20,9 +21,15 @@ public class DropdownServiceImpl implements DropdownService {
     private final ProjectRepository projectRepository;
     private final ConsultantRepository consultantRepository;
     private final LabelRepository labelRepository;
+    private final ClientRepository clientRepository;
 
     public DropdownResponse<DropdownOptionDTO> searchProjects(String search, int limit) {
         return query(projectRepository, search, limit);
+    }
+
+    @Override
+    public DropdownResponse<DropdownOptionDTO> searchClients(String search, int limit) {
+        return query(clientRepository, search, limit);
     }
 
     public DropdownResponse<DropdownOptionDTO> searchConsultants(String search, int limit) {
@@ -38,11 +45,12 @@ public class DropdownServiceImpl implements DropdownService {
         Page<DropdownOptionDTO> page = repository.searchForDropdown(
                 nullIfBlank(search),
                 tenantId,
-                PageRequest.of(0, limit)
-        );
+                PageRequest.of(0, limit));
         return new DropdownResponse<>(page.getContent(), page.getTotalElements());
     }
 
     private String nullIfBlank(String s) {
         return (s == null || s.isBlank()) ? null : s.trim();
-    }}
+    }
+
+}
