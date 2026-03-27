@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.timesheet.service;
 
-
 import com.shegami.hr_saas.modules.timesheet.dto.CreateTimesheetRequest;
 import com.shegami.hr_saas.modules.timesheet.dto.ReviewTimesheetRequest;
 import com.shegami.hr_saas.modules.timesheet.dto.SaveEntriesRequest;
@@ -29,4 +28,6 @@ public interface TimesheetService {
     TimesheetResponse getTimesheet(String timesheetId);
 
     Page<TimesheetResponse> getAllTimesheets(Pageable pageable);
+
+    List<TimesheetResponse> getApprovedTimesheetsByClient(String clientId);
 }

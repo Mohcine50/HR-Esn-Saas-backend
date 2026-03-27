@@ -50,7 +50,6 @@ public class TimesheetController {
         return ResponseEntity.ok(timesheetService.submitTimesheet(timesheetId));
     }
 
-
     /**
      * Manager approves or rejects a submitted timesheet
      */
@@ -86,6 +85,11 @@ public class TimesheetController {
     public ResponseEntity<List<TimesheetResponse>> getHistory(@PathVariable String consultantId) {
 
         return ResponseEntity.ok(timesheetService.getConsultantHistory(consultantId));
+    }
+
+    @GetMapping("/client/{clientId}/approved")
+    public ResponseEntity<List<TimesheetResponse>> getApprovedByClient(@PathVariable String clientId) {
+        return ResponseEntity.ok(timesheetService.getApprovedTimesheetsByClient(clientId));
     }
 
     /**

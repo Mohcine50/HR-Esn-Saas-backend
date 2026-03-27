@@ -239,8 +239,12 @@ public class TimesheetServiceImpl implements TimesheetService {
             String statusVerb = saved.getStatus() == TimesheetStatus.APPROVED ? "approved" : "rejected";
             NotificationMessage msg = NotificationMessage.builder()
                     .userId(consultantUserId)
-                    .notificationType(saved.getStatus() == TimesheetStatus.APPROVED ? NotificationType.TIMESHEET_APPROVED : NotificationType.TIMESHEET_REJECTED)
-                    .title(saved.getStatus() == TimesheetStatus.APPROVED ? NotificationType.TIMESHEET_APPROVED.getDefaultTitle() : NotificationType.TIMESHEET_REJECTED.getDefaultTitle())
+                    .notificationType(
+                            saved.getStatus() == TimesheetStatus.APPROVED ? NotificationType.TIMESHEET_APPROVED
+                                    : NotificationType.TIMESHEET_REJECTED)
+                    .title(saved.getStatus() == TimesheetStatus.APPROVED
+                            ? NotificationType.TIMESHEET_APPROVED.getDefaultTitle()
+                            : NotificationType.TIMESHEET_REJECTED.getDefaultTitle())
                     .message("Your timesheet for mission '" + saved.getMission().getTitle() + "' was \b" + statusVerb
                             + "\b.")
                     .entityType(EntityType.TIMESHEET)
@@ -312,6 +316,16 @@ public class TimesheetServiceImpl implements TimesheetService {
 
         log.debug("[Timesheet] All timesheets fetched | tenantId={} total={}", tenantId, result.getTotalElements());
         return result;
+    }
+
+    @Override
+    public List<TimesheetResponse> getApprovedTimesheetsByClient(String clientId) {
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        log.debug("[Timesheet] Fetching approved timesheets for client: {} | tenantId={}", clientId, tenantId);
+        return timesheetRepository.findApprovedByClient(clientId, tenantId)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     /**

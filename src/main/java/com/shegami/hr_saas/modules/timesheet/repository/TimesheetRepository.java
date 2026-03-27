@@ -75,6 +75,17 @@ public interface TimesheetRepository extends JpaRepository<Timesheet, Long> {
             @Param("month") int month,
             @Param("year") int year);
 
-    Page<Timesheet> findAllByTenantTenantId(String tenantId, Pageable pageable);
+    @Query("""
+            SELECT t FROM Timesheet t
+            JOIN t.mission m
+            WHERE m.client.clientId = :clientId
+              AND t.tenant.tenantId = :tenantId
+              AND t.status = 'APPROVED'
+            ORDER BY t.year DESC, t.month DESC
+            """)
+    List<Timesheet> findApprovedByClient(
+            @Param("clientId") String clientId,
+            @Param("tenantId") String tenantId);
 
+    Page<Timesheet> findAllByTenantTenantId(String tenantId, Pageable pageable);
 }
