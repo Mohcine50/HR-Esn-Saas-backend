@@ -72,13 +72,14 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void sendToClient(String userId, NotificationDto dto) {
-        log.info("[Notification STOMP] Sending to user: {}", userId);
+        log.info("[Notification STOMP] Sending to user: {} | title: {}", userId, dto.getTitle());
 
-        // This is the most reliable way when using custom principal
         messagingTemplate.convertAndSendToUser(
                 userId,
                 "/queue/notifications",
                 dto);
+
+        log.info("[Notification STOMP] Message sent to /user/{}/queue/notifications", userId);
     }
 
     @Override

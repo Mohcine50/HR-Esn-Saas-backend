@@ -51,7 +51,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/queue", "/topic", "/user");
+        config.enableSimpleBroker("/queue", "/topic");
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
     }
@@ -69,7 +69,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+
+                if (accessor == null) {
+                    return message;
+                }
 
                 StompCommand command = accessor.getCommand();
                 log.info("WebSocketConfig: preSend - Command: {}", command);
@@ -86,6 +90,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             User userEntity = userService.findUserByUserId(userId)
                                     .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+                            String appUserId = userEntity.getUserId();
                             String tenantId = jwt.getClaim("X-Tenant-ID");
                             List<String> roles = jwt.getClaim("roles");
 
@@ -93,22 +98,24 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                     .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
                                     .collect(Collectors.toList());
 
-                            Authentication auth = new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                            Authentication auth = new UsernamePasswordAuthenticationToken(appUserId, null, authorities);
 
                             accessor.setUser(auth);
+                            accessor.setLeaveMutable(true);
 
-                            // CRITICAL: Store in session attributes EARLY
                             Map<String, Object> attrs = accessor.getSessionAttributes();
                             if (attrs != null) {
-                                attrs.put("userId", userId);
+                                attrs.put("userId", appUserId);
                                 attrs.put("tenantId", tenantId);
                             }
 
-                            log.info("✅ CONNECT successful - User: {}", userId);
+                            log.info("✅ CONNECT successful - userId: {}, principal set: {}", appUserId, auth.getName());
 
                         } catch (Exception e) {
                             log.error("JWT validation failed for WebSocket CONNECT", e);
                         }
+                    } else {
+                        log.warn("⚠️ STOMP CONNECT with no Authorization header");
                     }
                 } else if (StompCommand.SUBSCRIBE.equals(command)) {
                     Principal principal = accessor.getUser();
@@ -120,8 +127,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             principal != null ? principal.getName() : "NULL",
                             sessionId);
 
-                    // Re-attach if still missing (fallback)
-                    if (principal == null || "NULL".equals(principal.getName())) {
+                    if (principal == null) {
                         Map<String, Object> attrs = accessor.getSessionAttributes();
                         if (attrs != null && attrs.containsKey("userId")) {
                             String userId = (String) attrs.get("userId");
@@ -133,18 +139,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 }
 
                 return message;
-            }
-
-            @Override
-            public void postSend(Message<?> message, MessageChannel channel, boolean sent) {
-                StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-                if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())
-                        || StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    Principal p = accessor.getUser();
-                    if (p != null) {
-                        log.info("postSend - User confirmed for {}: {}", accessor.getCommand(), p.getName());
-                    }
-                }
             }
         });
     }

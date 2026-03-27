@@ -1,7 +1,5 @@
 package com.shegami.hr_saas.config.domain.rabbitMq;
 
-
-
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -9,14 +7,18 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+
 /**
  * RabbitMQ Configuration
-
- * 1. IN_APP_NOTIFICATIONS - For real-time in-app notifications (WebSocket delivery)
+ * 
+ * 1. IN_APP_NOTIFICATIONS - For real-time in-app notifications (WebSocket
+ * delivery)
  * 2. EMAIL_INVITATIONS - For user invitation emails
  * 3. EMAIL_VERIFICATIONS - For email verification/confirmation emails
- * 4. EMAIL_CRITICAL - For critical email notifications (password reset, security alerts)
-
+ * 4. EMAIL_CRITICAL - For critical email notifications (password reset,
+ * security alerts)
+ * 
  * Each has:
  * - Main exchange (Topic exchange for flexible routing)
  * - Main queue (with DLQ configured)
@@ -35,6 +37,15 @@ public class RabbitMQConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter());
         return rabbitTemplate;
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(messageConverter());
+        return factory;
     }
 
     // ==================== IN-APP NOTIFICATIONS ====================
