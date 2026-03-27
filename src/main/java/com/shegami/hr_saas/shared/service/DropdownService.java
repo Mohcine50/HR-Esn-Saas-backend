@@ -12,4 +12,6 @@ public interface DropdownService {
 
     DropdownResponse<DropdownOptionDTO> searchClients(String search, int limit);
 
+    DropdownResponse<DropdownOptionDTO> searchMissions(String search, int limit);
+
 }

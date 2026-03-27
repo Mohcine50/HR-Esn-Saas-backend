@@ -44,4 +44,12 @@ public class DropdownController {
                 return ResponseEntity.ok(
                                 dropdownService.searchClients(request.getSearch(), request.getLimit()));
         }
+
+        @GetMapping("/misssions")
+        public ResponseEntity<DropdownResponse<DropdownOptionDTO>> searchMissions(
+                        @Valid DropdownSearchRequest request) {
+                return ResponseEntity.ok(
+                                dropdownService.searchMissions(request.getSearch(), request.getLimit()));
+        }
+
 }
