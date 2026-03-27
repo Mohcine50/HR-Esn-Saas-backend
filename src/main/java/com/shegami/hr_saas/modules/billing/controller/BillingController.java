@@ -1,9 +1,9 @@
 package com.shegami.hr_saas.modules.billing.controller;
 
-import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.billing.dto.InvoiceDto;
 import com.shegami.hr_saas.modules.billing.dto.PaymentRequest;
 import com.shegami.hr_saas.modules.billing.dto.UpdateInvoiceStatusRequest;
+import com.shegami.hr_saas.modules.billing.dto.CreateInvoiceRequest;
 import com.shegami.hr_saas.modules.billing.service.InvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +20,22 @@ import java.util.Map;
 public class BillingController {
 
     private final InvoiceService invoiceService;
+
+    @PostMapping("/invoices")
+    public ResponseEntity<InvoiceDto> create(@Valid @RequestBody CreateInvoiceRequest req) {
+        return ResponseEntity.ok(invoiceService.createInvoice(req));
+    }
+
+    @PutMapping("/invoices/{id}")
+    public ResponseEntity<InvoiceDto> update(@PathVariable String id, @Valid @RequestBody CreateInvoiceRequest req) {
+        return ResponseEntity.ok(invoiceService.updateInvoice(id, req));
+    }
+
+    @DeleteMapping("/invoices/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        invoiceService.deleteInvoice(id);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/invoices")
     public ResponseEntity<Page<InvoiceDto>> getAll(Pageable pageable) {

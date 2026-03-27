@@ -17,6 +17,7 @@ import java.util.UUID;
 public class Payment extends BaseTenantEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
     private Invoice invoice;
 
     @Column(precision = 12, scale = 2, nullable = false)
@@ -29,10 +30,10 @@ public class Payment extends BaseTenantEntity {
     @Enumerated(EnumType.STRING)
     private PaymentMethod method;
 
-
     @Id
     @Column(name = "payment_id", nullable = false)
     private String paymentId;
+
     @PrePersist
     public void generatePaymentId() {
         if (this.paymentId == null) {

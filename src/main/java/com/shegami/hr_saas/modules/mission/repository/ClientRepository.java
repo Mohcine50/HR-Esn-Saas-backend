@@ -14,7 +14,11 @@ public interface ClientRepository extends JpaRepository<Client, String> {
 
     @Query("SELECT c FROM Client c WHERE c.tenant.tenantId = :tenant")
     Page<Client> findByTenantId(Pageable pageable, @Param("tenant") String tenant);
+
+    Optional<Client> findByClientIdAndTenantTenantId(String clientId, String tenantId);
+
     Optional<Client> findByEmail(String email);
+
     boolean existsByEmail(String email);
 
 }

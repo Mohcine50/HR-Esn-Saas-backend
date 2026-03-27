@@ -43,6 +43,14 @@ import com.shegami.hr_saas.modules.billing.repository.PaymentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
+import java.util.UUID;
+
+import com.shegami.hr_saas.modules.auth.service.TenantService;
+import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
+import com.shegami.hr_saas.modules.billing.dto.CreateInvoiceRequest;
+import com.shegami.hr_saas.modules.billing.dto.CreateInvoiceLineRequest;
+import com.shegami.hr_saas.modules.auth.entity.Tenant;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +64,78 @@ public class InvoiceServiceImpl implements InvoiceService {
         private final UploadService uploadService;
         private final BillingMapper billingMapper;
         private final RabbitTemplate rabbitTemplate;
+        private final ClientRepository clientRepository;
+        private final TenantService tenantService;
+
+        @Override
+        @Transactional
+        public InvoiceDto createInvoice(CreateInvoiceRequest request) {
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                Tenant tenant = tenantService.getTenant(tenantId);
+
+                Client client = clientRepository.findByClientIdAndTenantTenantId(request.getClientId(), tenantId)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Client not found: " + request.getClientId()));
+
+                String invoiceNumber = "INV-M-" + LocalDate.now().toString().replace("-", "") + "-"
+                                + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+
+                Invoice invoice = new Invoice();
+                invoice.setTenant(tenant);
+                invoice.setInvoiceNumber(invoiceNumber);
+                invoice.setClient(client);
+                invoice.setClientNameAtBilling(client.getFullName());
+                invoice.setClientAddressAtBilling(client.getAddress() != null ? client.getAddress() : "N/A");
+                invoice.setVatNumberAtBilling(client.getVatNumber() != null ? client.getVatNumber() : "N/A");
+                invoice.setIssueDate(request.getIssueDate());
+                invoice.setDueDate(request.getDueDate());
+                invoice.setStatus(InvoiceStatus.DRAFT);
+
+                BigDecimal subTotal = BigDecimal.ZERO;
+                for (CreateInvoiceLineRequest lineReq : request.getLines()) {
+                        InvoiceLine line = new InvoiceLine();
+                        line.setTenant(tenant);
+                        line.setInvoice(invoice);
+                        line.setDescription(lineReq.getDescription());
+                        line.setQuantity(lineReq.getQuantity());
+                        line.setUnitPrice(lineReq.getUnitPrice());
+
+                        BigDecimal lineTotal = line.getQuantity().multiply(line.getUnitPrice());
+                        line.setTotalLineAmount(lineTotal);
+
+                        invoice.getInvoiceLines().add(line);
+                        subTotal = subTotal.add(lineTotal);
+                }
+
+                invoice.setSubTotal(subTotal);
+                BigDecimal vatRate = BigDecimal.valueOf(0.20); // Default 20%
+                BigDecimal vatAmount = subTotal.multiply(vatRate).setScale(2, RoundingMode.HALF_UP);
+                invoice.setVatAmount(vatAmount);
+                invoice.setTotalAmount(subTotal.add(vatAmount));
+
+                Invoice savedInvoice = invoiceRepository.save(invoice);
+
+                // Generate and Upload PDF
+                try {
+                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
+                        UploadFile uploadFile = uploadService.uploadInternalFile(
+                                        pdfBytes,
+                                        savedInvoice.getInvoiceNumber() + ".pdf",
+                                        FileType.INVOICE,
+                                        "application/pdf",
+                                        tenant,
+                                        null); // System upload
+
+                        savedInvoice.setInvoiceFile(uploadFile);
+                        savedInvoice.setPdfS3Key(uploadFile.getS3Key());
+                        invoiceRepository.save(savedInvoice);
+                } catch (Exception e) {
+                        log.error("[Billing] Failed to generate/upload PDF for manual Invoice: {}",
+                                        savedInvoice.getInvoiceNumber(), e);
+                }
+
+                return billingMapper.toDto(savedInvoice, Collections.emptyList());
+        }
 
         @RabbitListener(queues = RabbitMQConfig.BILLING_QUEUE)
         @Transactional
@@ -229,6 +309,94 @@ public class InvoiceServiceImpl implements InvoiceService {
                                 .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
                 invoice.setStatus(status);
                 invoiceRepository.save(invoice);
+        }
+
+        @Override
+        @Transactional
+        public InvoiceDto updateInvoice(String invoiceId, CreateInvoiceRequest request) {
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                log.info("[Billing] Updating invoice {} for tenant: {}", invoiceId, tenantId);
+
+                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
+                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
+
+                if (invoice.getStatus() != InvoiceStatus.DRAFT) {
+                        throw new IllegalStateException("Only DRAFT invoices can be updated.");
+                }
+
+                Client client = clientRepository.findByClientIdAndTenantTenantId(request.getClientId(), tenantId)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Client not found: " + request.getClientId()));
+
+                invoice.setClient(client);
+                invoice.setClientNameAtBilling(client.getFullName());
+                invoice.setClientAddressAtBilling(client.getAddress() != null ? client.getAddress() : "N/A");
+                invoice.setVatNumberAtBilling(client.getVatNumber() != null ? client.getVatNumber() : "N/A");
+                invoice.setIssueDate(request.getIssueDate());
+                invoice.setDueDate(request.getDueDate());
+
+                // Update lines
+                invoice.getInvoiceLines().clear();
+                BigDecimal subTotal = BigDecimal.ZERO;
+                for (CreateInvoiceLineRequest lineReq : request.getLines()) {
+                        InvoiceLine line = new InvoiceLine();
+                        line.setTenant(invoice.getTenant());
+                        line.setInvoice(invoice);
+                        line.setDescription(lineReq.getDescription());
+                        line.setQuantity(lineReq.getQuantity());
+                        line.setUnitPrice(lineReq.getUnitPrice());
+
+                        BigDecimal lineTotal = line.getQuantity().multiply(line.getUnitPrice());
+                        line.setTotalLineAmount(lineTotal);
+
+                        invoice.getInvoiceLines().add(line);
+                        subTotal = subTotal.add(lineTotal);
+                }
+
+                invoice.setSubTotal(subTotal);
+                BigDecimal vatRate = BigDecimal.valueOf(0.20); // Default 20%
+                BigDecimal vatAmount = subTotal.multiply(vatRate).setScale(2, RoundingMode.HALF_UP);
+                invoice.setVatAmount(vatAmount);
+                invoice.setTotalAmount(subTotal.add(vatAmount));
+
+                Invoice savedInvoice = invoiceRepository.save(invoice);
+
+                // Regenerate PDF
+                try {
+                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
+                        UploadFile uploadFile = uploadService.uploadInternalFile(
+                                        pdfBytes,
+                                        savedInvoice.getInvoiceNumber() + ".pdf",
+                                        FileType.INVOICE,
+                                        "application/pdf",
+                                        invoice.getTenant(),
+                                        null);
+
+                        savedInvoice.setInvoiceFile(uploadFile);
+                        savedInvoice.setPdfS3Key(uploadFile.getS3Key());
+                        invoiceRepository.save(savedInvoice);
+                } catch (Exception e) {
+                        log.error("[Billing] Failed to regenerate PDF for updated Invoice: {}",
+                                        savedInvoice.getInvoiceNumber(), e);
+                }
+
+                return billingMapper.toDto(savedInvoice, invoice.getPayments());
+        }
+
+        @Override
+        @Transactional
+        public void deleteInvoice(String invoiceId) {
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                log.info("[Billing] Deleting invoice {} for tenant: {}", invoiceId, tenantId);
+
+                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
+                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
+
+                if (invoice.getStatus() == InvoiceStatus.PAID) {
+                        throw new IllegalStateException("Cannot delete a PAID invoice.");
+                }
+
+                invoiceRepository.delete(invoice);
         }
 
         @Override

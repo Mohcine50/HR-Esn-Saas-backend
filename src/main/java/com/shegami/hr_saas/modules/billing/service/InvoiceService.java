@@ -8,6 +8,7 @@ import com.shegami.hr_saas.modules.timesheet.dto.TimesheetApprovedEvent;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.shegami.hr_saas.modules.billing.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -16,11 +17,17 @@ public interface InvoiceService {
     @Transactional
     void handleTimesheetApproved(TimesheetApprovedEvent event);
 
+    InvoiceDto createInvoice(CreateInvoiceRequest request);
+
     Page<InvoiceDto> getAllInvoices(Pageable pageable);
 
     InvoiceDto getInvoiceById(String invoiceId);
 
     void recordPayment(String invoiceId, PaymentRequest request);
+
+    InvoiceDto updateInvoice(String invoiceId, CreateInvoiceRequest request);
+
+    void deleteInvoice(String invoiceId);
 
     void updateStatus(String invoiceId, InvoiceStatus status);
 

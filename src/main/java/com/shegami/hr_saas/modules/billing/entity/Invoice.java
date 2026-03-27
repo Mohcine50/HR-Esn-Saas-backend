@@ -11,13 +11,16 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "invoices")
-@Getter @Setter
+@Getter
+@Setter
 public class Invoice extends BaseTenantEntity {
 
     @Column(unique = true, nullable = false)
@@ -56,9 +59,12 @@ public class Invoice extends BaseTenantEntity {
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<InvoiceLine> invoiceLines = new HashSet<>();
 
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Payment> payments = new ArrayList<>();
     @Id
     @Column(name = "invoice_id", nullable = false)
     private String invoiceId;
+
     @PrePersist
     public void generateInvoiceId() {
         if (this.invoiceId == null) {
