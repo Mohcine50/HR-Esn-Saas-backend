@@ -14,12 +14,17 @@ import com.shegami.hr_saas.modules.upload.mapper.FileType;
 
 public interface UploadService {
     UploadResponse initiateUpload(UploadRequest uploadRequest);
+
     void completeUpload(String fileId);
+
     String generateDownloadUrl(String fileId);
+
     UploadFile getUploadFile(String fileId);
+
     Set<UploadFile> getUploadFiles(Set<String> fileIds);
 
     String resolveUrl(UploadFile file);
 
-    UploadFile uploadInternalFile(byte[] content, String fileName, FileType fileType, String contentType, Tenant tenant, User uploader);
+    UploadFile uploadInternalFile(byte[] content, String fileName, FileType fileType, String contentType, Tenant tenant,
+            User uploader);
 }

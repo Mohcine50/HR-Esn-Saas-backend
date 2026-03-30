@@ -11,7 +11,7 @@ import lombok.Setter;
 import java.util.List;
 import java.util.UUID;
 
-@Table(name="files")
+@Table(name = "files")
 @Entity
 @Getter
 @Setter
@@ -37,10 +37,10 @@ public class UploadFile extends BaseTenantEntity {
     @Column(name = "public_url")
     private String publicUrl;
 
-
     @Id
     @Column(name = "file_id", nullable = false)
     private String fileId;
+
     @PrePersist
     public void generateFileId() {
         if (this.fileId == null) {

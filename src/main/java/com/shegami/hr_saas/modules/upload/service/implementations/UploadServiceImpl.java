@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -41,14 +42,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UploadServiceImpl implements UploadService {
 
-    private final TenantService          tenantService;
-    private final UploadFileRepository   uploadFileRepository;
-    private final S3Presigner            s3Signer;
-    private final UserService            userService;
-    private final S3Client               s3Client;
+    private final TenantService tenantService;
+    private final UploadFileRepository uploadFileRepository;
+    private final S3Presigner s3Signer;
+    private final UserService userService;
+    private final S3Client s3Client;
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
-
 
     @Value("${aws.s3.endpoint}")
     private String endpoint;
@@ -57,20 +57,23 @@ public class UploadServiceImpl implements UploadService {
 
     private static final Set<FileType> PUBLIC_TYPES = Set.of(
             FileType.PROFILE,
-            FileType.COMPANY_LOGO
-    );
+            FileType.COMPANY_LOGO);
+
     @Transactional
     @Override
     public UploadResponse initiateUpload(UploadRequest uploadRequest) {
-        String tenantId  = UserContextHolder.getCurrentUserContext().tenantId();
-        Tenant tenant    = tenantService.getTenant(tenantId);
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        String userId = UserContextHolder.getCurrentUserContext().userId();
 
-        String userEmail = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.findUserByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + userEmail));
+        log.info("[Upload] Initiating upload | tenantId={} userId={}", tenantId, userId);
+
+        User user = userService.findUserByUserId(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
+
+        Tenant tenant = tenantService.getTenant(tenantId);
 
         boolean isPublic = PUBLIC_TYPES.contains(uploadRequest.getFileType());
-        String  prefix   = isPublic ? "public" : "private";
+        String prefix = isPublic ? "public" : "private";
 
         String s3Key = String.format("%s/%s/%s/%s-%s",
                 prefix,
@@ -99,7 +102,7 @@ public class UploadServiceImpl implements UploadService {
 
         // ── Public URL — stored permanently, no signing needed later ──────────
         // MinIO format: http://localhost:9000/bucket/key
-        // AWS format:   https://bucket.s3.region.amazonaws.com/key
+        // AWS format: https://bucket.s3.region.amazonaws.com/key
         String publicUrl = isPublic
                 ? "%s/%s/%s".formatted(endpoint, bucketName, s3Key)
                 : null;
@@ -127,14 +130,16 @@ public class UploadServiceImpl implements UploadService {
                 tenant.setImageUrl(saved);
                 tenantRepository.save(tenant);
             }
+            case ATTACHMENT, INVOICE, CONTRACT -> {
+                // No special handling needed yet
+            }
         }
 
-        log.info("[Upload] Upload initiated | fileId={} key={} isPublic={}",
-                saved.getFileId(), s3Key, isPublic);
+        log.info("[Upload] Upload initiated | fileId={} key={} isPublic={}", saved.getFileId(), s3Key, isPublic);
 
         return new UploadResponse(saved.getFileId(), uploadUrl);
-    }
 
+    }
 
     @Transactional
     @Override
@@ -189,13 +194,16 @@ public class UploadServiceImpl implements UploadService {
 
     @Override
     public Set<UploadFile> getUploadFiles(Set<String> fileIds) {
-        if (fileIds == null || fileIds.isEmpty()) return new HashSet<>();
+        if (fileIds == null || fileIds.isEmpty())
+            return new HashSet<>();
         return new HashSet<>(uploadFileRepository.findAllById(fileIds));
     }
+
     @Override
     @Transactional
     public String resolveUrl(UploadFile file) {
-        if (file == null) return null;
+        if (file == null)
+            return null;
         if (file.isPublic() && file.getPublicUrl() != null) {
             return file.getPublicUrl();
         }
@@ -219,22 +227,15 @@ public class UploadServiceImpl implements UploadService {
 
     @Transactional
     @Override
-    public UploadFile uploadInternalFile(byte[] content, String fileName, FileType fileType, String contentType, Tenant tenant, User uploader) {
+    public UploadFile uploadInternalFile(byte[] content, String fileName, FileType fileType, String contentType,
+            Tenant tenant, User uploader) {
         boolean isPublic = PUBLIC_TYPES.contains(fileType);
         String prefix = isPublic ? "public" : "private";
-        
-        String s3Key = String.format("%s/%s/%s/%s-%s", prefix, tenant.getTenantId(), fileType.name().toLowerCase(), UUID.randomUUID(), fileName);
+
+        String s3Key = String.format("%s/%s/%s/%s-%s", prefix, tenant.getTenantId(), fileType.name().toLowerCase(),
+                UUID.randomUUID(), fileName);
 
         log.info("[Upload] Internal upload | tenantId={} fileType={} key={}", tenant.getTenantId(), fileType, s3Key);
-
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .contentType(contentType)
-                .acl(isPublic ? ObjectCannedACL.PUBLIC_READ : ObjectCannedACL.PRIVATE)
-                .build();
-
-        s3Client.putObject(putObjectRequest, software.amazon.awssdk.core.sync.RequestBody.fromBytes(content));
 
         String publicUrl = isPublic ? "%s/%s/%s".formatted(endpoint, bucketName, s3Key) : null;
 
@@ -245,7 +246,7 @@ public class UploadServiceImpl implements UploadService {
         file.setS3Key(s3Key);
         file.setPublic(isPublic);
         file.setPublicUrl(publicUrl);
-        file.setStatus(FileStatus.AVAILABLE);
+        file.setStatus(FileStatus.PENDING);
         file.setUploader(uploader);
         file.setTenant(tenant);
 

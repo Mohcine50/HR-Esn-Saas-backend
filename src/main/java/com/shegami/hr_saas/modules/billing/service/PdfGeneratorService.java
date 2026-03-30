@@ -5,8 +5,8 @@ import com.shegami.hr_saas.modules.billing.entity.Invoice;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.ByteArrayOutputStream;
 
@@ -15,18 +15,18 @@ import java.io.ByteArrayOutputStream;
 @Slf4j
 public class PdfGeneratorService {
 
-    private final TemplateEngine templateEngine;
+    private final SpringTemplateEngine templateEngine;
 
     public byte[] generateInvoicePdf(Invoice invoice) {
         log.info("Generating PDF for Invoice ID: {}", invoice.getInvoiceId());
-        
+
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             Context context = new Context();
             context.setVariable("invoice", invoice);
 
             // Render HTML using Thymeleaf
             String htmlContent = templateEngine.process("invoice", context);
-
+            log.info("HTML content: {}", htmlContent);
             // Convert HTML to PDF using OpenHTMLToPDF
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
