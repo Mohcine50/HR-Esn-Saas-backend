@@ -13,7 +13,7 @@ import com.shegami.hr_saas.modules.timesheet.dto.*;
 import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
 import com.shegami.hr_saas.modules.timesheet.entity.TimesheetEntry;
 import com.shegami.hr_saas.modules.timesheet.enums.TimesheetStatus;
-import com.shegami.hr_saas.modules.timesheet.exceptions.TimesheetNotFoundException;
+import com.shegami.hr_saas.modules.timesheet.exceptions.*;
 import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
@@ -57,14 +57,13 @@ public class TimesheetServiceImpl implements TimesheetService {
     public TimesheetResponse createTimesheet(CreateTimesheetRequest req) {
 
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        String userId = UserContextHolder.getCurrentUserContext().userId();
+        String consultantId = UserContextHolder.getCurrentUserContext().userId();
 
-        Consultant consultant = consultantRepository.findByUserUserId(userId)
-                .orElseThrow(() -> new ConsultantNotFoundException("Consultant not found for user: " + userId));
-        String consultantId = consultant.getConsultantId();
+        Consultant consultant = consultantRepository.findByUserUserId(consultantId)
+                .orElseThrow(() -> new ConsultantNotFoundException("Consultant not found for user: " + consultantId));
 
         log.info("[Timesheet] Creating timesheet | tenantId={} missionId={} consultantId={} period={}/{}",
-                tenantId, req.missionId(), consultantId, req.month(), req.year());
+                tenantId, req.missionId(), consultantId, req.year());
 
         Tenant tenant = tenantService.getTenant(tenantId);
 
@@ -107,8 +106,6 @@ public class TimesheetServiceImpl implements TimesheetService {
         log.info("[Timesheet] Saving entries | timesheetId={} tenantId={} entryCount={}",
                 timesheetId, tenantId, req.entries().size());
 
-        Tenant tenant = tenantService.getTenant(tenantId);
-
         Timesheet timesheet = getEditableTimesheet(timesheetId, tenantId);
 
         YearMonth period = YearMonth.of(timesheet.getYear(), timesheet.getMonth());
@@ -142,13 +139,11 @@ public class TimesheetServiceImpl implements TimesheetService {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         log.info("[Timesheet] Submitting timesheet | timesheetId={} tenantId={}", timesheetId, tenantId);
 
-        Tenant tenant = tenantService.getTenant(tenantId);
-
         Timesheet timesheet = getEditableTimesheet(timesheetId, tenantId);
 
         if (timesheet.getEntries().isEmpty()) {
             log.warn("[Timesheet] Submit rejected — no entries | timesheetId={}", timesheetId);
-            throw new IllegalStateException("Cannot submit an empty timesheet.");
+            throw new EmptyTimesheetException("Cannot submit an empty timesheet.");
         }
 
         timesheet.setStatus(TimesheetStatus.SUBMITTED);

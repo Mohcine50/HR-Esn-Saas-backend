@@ -6,7 +6,7 @@ import com.shegami.hr_saas.modules.hr.exception.*;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
-import com.shegami.hr_saas.modules.timesheet.exceptions.TimesheetNotFoundException;
+import com.shegami.hr_saas.modules.timesheet.exceptions.*;
 import com.shegami.hr_saas.modules.upload.exceptions.StorageUploadException;
 import com.shegami.hr_saas.shared.enums.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -132,6 +132,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(TimesheetNotFoundException.class)
     public ResponseEntity<ApiException> handleTimesheetNotFound(TimesheetNotFoundException ex) {
         return build(ErrorCode.TIMESHEET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(EmptyTimesheetException.class)
+    public ResponseEntity<ApiException> handleEmptyTimesheet(EmptyTimesheetException ex) {
+        return build(ErrorCode.EMPTY_TIMESHEET, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     // ── Billing ──────────────────────────────────────────────────────────────

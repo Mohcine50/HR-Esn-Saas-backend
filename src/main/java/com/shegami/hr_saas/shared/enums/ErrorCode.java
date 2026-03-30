@@ -34,6 +34,7 @@ public enum ErrorCode {
 
     // ── Timesheet ─────────────────────────────────────────────────────────────
     TIMESHEET_NOT_FOUND("Timesheet not found"),
+    EMPTY_TIMESHEET("Cannot submit an empty timesheet"),
 
     // ── Billing ──────────────────────────────────────────────────────────────
     INVOICE_NOT_FOUND("Invoice not found"),

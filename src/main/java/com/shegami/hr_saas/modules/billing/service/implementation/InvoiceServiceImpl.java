@@ -129,11 +129,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                         savedInvoice.setInvoiceFile(uploadFile);
                         savedInvoice.setPdfS3Key(uploadFile.getS3Key());
                         invoiceRepository.save(savedInvoice);
-
+                        // log the uploadFile content
+                        log.info("[CREATE INVOICE] UPLOADFile: {}", uploadFile.getFileId());
                         rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
                                         new FileUploadMessage(uploadFile.getFileId(), pdfBytes));
                 } catch (Exception e) {
-                        log.error("[Billing] Failed to generate/upload PDF for manual Invoice: {}",
+                        log.error("[CREATE INVOICE] Failed to generate/upload PDF for Invoice: {}",
                                         savedInvoice.getInvoiceNumber(), e);
                 }
 
