@@ -18,7 +18,6 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.util.Map;
 
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -65,12 +64,12 @@ public class EmailSenderServiceImpl implements EmailSenderService {
     @Override
     @SneakyThrows
     public void sendInvitationEmail(String recipientEmail,
-                                    String recipientFirstName,
-                                    String inviterName,
-                                    String invitationToken,
-                                    String role,
-                                    String companyName,
-                                    Map<String, Object> metadata) {
+            String recipientFirstName,
+            String inviterName,
+            String invitationToken,
+            String role,
+            String companyName,
+            Map<String, Object> metadata) {
 
         Context context = new Context();
         context.setVariable("recipientFirstName", recipientFirstName);
@@ -87,7 +86,8 @@ public class EmailSenderServiceImpl implements EmailSenderService {
 
     @Override
     @SneakyThrows
-    public void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken, String companyName) {
+    public void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken,
+            String companyName) {
         Context context = new Context();
         context.setVariable("recipientFirstName", recipientFirstName);
         context.setVariable("verificationToken", verificationToken);
@@ -110,6 +110,5 @@ public class EmailSenderServiceImpl implements EmailSenderService {
     public void sendSecurityAlertEmail(String recipientEmail, String recipientFirstName, Map<String, Object> context) {
 
     }
-
 
 }

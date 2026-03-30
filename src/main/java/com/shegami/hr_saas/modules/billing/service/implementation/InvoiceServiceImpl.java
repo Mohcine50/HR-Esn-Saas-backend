@@ -34,6 +34,7 @@ import java.time.YearMonth;
 import com.shegami.hr_saas.modules.upload.service.UploadService;
 import com.shegami.hr_saas.modules.upload.mapper.FileType;
 import com.shegami.hr_saas.modules.upload.entity.UploadFile;
+import com.shegami.hr_saas.modules.upload.dto.FileUploadMessage;
 
 import com.shegami.hr_saas.modules.billing.dto.InvoiceDto;
 import com.shegami.hr_saas.modules.billing.dto.PaymentRequest;
@@ -125,10 +126,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                                         "application/pdf",
                                         tenant,
                                         null); // System upload
-
                         savedInvoice.setInvoiceFile(uploadFile);
                         savedInvoice.setPdfS3Key(uploadFile.getS3Key());
                         invoiceRepository.save(savedInvoice);
+
+                        rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
+                                        new FileUploadMessage(uploadFile.getFileId(), pdfBytes));
                 } catch (Exception e) {
                         log.error("[Billing] Failed to generate/upload PDF for manual Invoice: {}",
                                         savedInvoice.getInvoiceNumber(), e);
@@ -147,14 +150,37 @@ public class InvoiceServiceImpl implements InvoiceService {
                                 .findByIdAndTenant(event.getTimesheetId(), event.getTenantId())
                                 .orElseThrow(() -> new TimesheetNotFoundException(
                                                 "Timesheet not found: " + event.getTimesheetId()));
+                log.info("Timesheet {}", timesheet);
+                Invoice invoice = createInvoiceFromTimesheet(timesheet);
+                calculateInvoiceTotals(invoice);
 
+                Invoice savedInvoice = invoiceRepository.save(invoice);
+
+                try {
+                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
+                        attachPdfToInvoice(savedInvoice, pdfBytes);
+
+                        sendBackgroundUploadTask(savedInvoice, pdfBytes);
+                        sendInvoiceGeneratedNotification(savedInvoice, timesheet);
+                } catch (Exception e) {
+                        log.error("[Billing] Failed to generate/upload PDF for Invoice ID: {}",
+                                        savedInvoice.getInvoiceId(), e);
+                }
+        }
+
+        private Invoice createInvoiceFromTimesheet(Timesheet timesheet) {
                 String invoiceRef = "INV-" + timesheet.getYear() + "-" + String.format("%02d", timesheet.getMonth())
-                                + "-"
-                                + event.getTimesheetId().substring(0, 5);
+                                + "-" + timesheet.getTimesheetId().substring(0, 5);
 
                 Invoice invoice = new Invoice();
                 invoice.setTenant(timesheet.getTenant());
                 invoice.setInvoiceNumber(invoiceRef);
+                invoice.setTimesheet(timesheet);
+                invoice.setIssueDate(LocalDate.now());
+                invoice.setStatus(InvoiceStatus.DRAFT);
+
+                YearMonth ym = YearMonth.of(timesheet.getYear(), timesheet.getMonth());
+                invoice.setDueDate(ym.atEndOfMonth().plusDays(30));
 
                 Client client = timesheet.getMission().getClient();
                 invoice.setClient(client);
@@ -167,15 +193,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                         invoice.setClientNameAtBilling("Unknown Client");
                 }
 
-                invoice.setIssueDate(LocalDate.now());
-                YearMonth ym = YearMonth.of(timesheet.getYear(), timesheet.getMonth());
-                invoice.setDueDate(ym.atEndOfMonth().plusDays(30));
-                invoice.setStatus(InvoiceStatus.DRAFT);
-                invoice.setTimesheet(timesheet);
-
-                BigDecimal subTotal = BigDecimal.ZERO;
                 BigDecimal defaultTjm = BigDecimal.valueOf(500.00);
-
                 for (TimesheetEntry entry : timesheet.getEntries()) {
                         if (entry.getQuantity() > 0) {
                                 InvoiceLine line = new InvoiceLine();
@@ -185,59 +203,63 @@ public class InvoiceServiceImpl implements InvoiceService {
                                                 + timesheet.getMission().getTitle());
                                 line.setQuantity(BigDecimal.valueOf(entry.getQuantity()));
                                 line.setUnitPrice(defaultTjm);
-
-                                BigDecimal lineTotal = line.getQuantity().multiply(line.getUnitPrice());
-                                line.setTotalLineAmount(lineTotal);
+                                line.setTotalLineAmount(line.getQuantity().multiply(line.getUnitPrice()));
 
                                 invoice.getInvoiceLines().add(line);
-                                subTotal = subTotal.add(lineTotal);
                         }
                 }
+                return invoice;
+        }
+
+        private void calculateInvoiceTotals(Invoice invoice) {
+                BigDecimal subTotal = invoice.getInvoiceLines().stream()
+                                .map(InvoiceLine::getTotalLineAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 invoice.setSubTotal(subTotal);
                 BigDecimal vatRate = BigDecimal.valueOf(0.20);
                 BigDecimal vatAmount = subTotal.multiply(vatRate).setScale(2, RoundingMode.HALF_UP);
                 invoice.setVatAmount(vatAmount);
                 invoice.setTotalAmount(subTotal.add(vatAmount));
+        }
 
-                Invoice savedInvoice = invoiceRepository.save(invoice);
+        private void attachPdfToInvoice(Invoice invoice, byte[] pdfBytes) {
+                UploadFile uploadFile = uploadService.uploadInternalFile(
+                                pdfBytes,
+                                invoice.getInvoiceNumber() + ".pdf",
+                                FileType.INVOICE,
+                                "application/pdf",
+                                invoice.getTenant(),
+                                invoice.getCreatedBy());
 
-                try {
-                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
-                        UploadFile uploadFile = uploadService.uploadInternalFile(
-                                        pdfBytes,
-                                        savedInvoice.getInvoiceNumber() + ".pdf",
-                                        FileType.INVOICE,
-                                        "application/pdf",
-                                        savedInvoice.getTenant(),
-                                        savedInvoice.getCreatedBy());
+                invoice.setInvoiceFile(uploadFile);
+                invoice.setPdfS3Key(uploadFile.getS3Key());
+                invoiceRepository.save(invoice);
+        }
 
-                        savedInvoice.setInvoiceFile(uploadFile);
-                        savedInvoice.setPdfS3Key(uploadFile.getS3Key());
-                        invoiceRepository.save(savedInvoice);
+        private void sendBackgroundUploadTask(Invoice invoice, byte[] pdfBytes) {
+                rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
+                                new FileUploadMessage(invoice.getInvoiceFile().getFileId(), pdfBytes));
+        }
 
-                        if (timesheet.getMission().getAccountManager() != null
-                                        && timesheet.getMission().getAccountManager().getUser() != null) {
-                                NotificationMessage msg = NotificationMessage.builder()
-                                                .userId(timesheet.getMission().getAccountManager().getUser()
-                                                                .getUserId())
-                                                .notificationType(NotificationType.INVOICE_GENERATED)
-                                                .title(NotificationType.INVOICE_GENERATED.getDefaultTitle())
-                                                .message("An invoice for the mission '"
-                                                                + timesheet.getMission().getTitle()
-                                                                + "' was successfully generated.")
-                                                .entityType(EntityType.INVOICE)
-                                                .entityId(savedInvoice.getInvoiceId())
-                                                .actorId(timesheet.getValidatedBy().getUser().getUserId())
-                                                .actorName(timesheet.getValidatedBy().getUser().getFullName())
-                                                .build();
-                                rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
-                                                "notification.invoice.generated",
-                                                msg);
-                        }
-                } catch (Exception e) {
-                        log.error("[Billing] Failed to generate/upload PDF for Invoice ID: {}",
-                                        savedInvoice.getInvoiceId(), e);
+        private void sendInvoiceGeneratedNotification(Invoice invoice, Timesheet timesheet) {
+                log.info("[Billing] Sending InvoiceGeneratedNotification for Invoice ID: {}", invoice.getInvoiceId());
+                if (timesheet.getMission().getAccountManager() != null
+                                && timesheet.getMission().getAccountManager().getUser() != null) {
+                        NotificationMessage msg = NotificationMessage.builder()
+                                        .userId(timesheet.getCreatedBy().getUserId())
+                                        .notificationType(NotificationType.INVOICE_GENERATED)
+                                        .title(NotificationType.INVOICE_GENERATED.getDefaultTitle())
+                                        .message("An invoice for the mission '" + timesheet.getMission().getTitle()
+                                                        + "' was successfully generated.")
+                                        .entityType(EntityType.INVOICE)
+                                        .entityId(invoice.getInvoiceId())
+                                        .actorId(timesheet.getValidatedBy().getUser().getUserId())
+                                        .actorName(timesheet.getValidatedBy().getUser().getFullName())
+                                        .build();
+
+                        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                                        "notification.invoice.generated", msg);
                 }
         }
 
@@ -375,6 +397,10 @@ public class InvoiceServiceImpl implements InvoiceService {
                         savedInvoice.setInvoiceFile(uploadFile);
                         savedInvoice.setPdfS3Key(uploadFile.getS3Key());
                         invoiceRepository.save(savedInvoice);
+
+                        // Fire an event to upload the pdf to the cloud storage in background
+                        rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
+                                        new FileUploadMessage(uploadFile.getFileId(), pdfBytes));
                 } catch (Exception e) {
                         log.error("[Billing] Failed to regenerate PDF for updated Invoice: {}",
                                         savedInvoice.getInvoiceNumber(), e);

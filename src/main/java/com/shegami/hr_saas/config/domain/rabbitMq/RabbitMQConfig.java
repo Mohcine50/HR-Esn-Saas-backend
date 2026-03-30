@@ -8,6 +8,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 
 /**
  * RabbitMQ Configuration
@@ -41,9 +42,10 @@ public class RabbitMQConfig {
 
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
-            ConnectionFactory connectionFactory) {
+            ConnectionFactory connectionFactory,
+            SimpleRabbitListenerContainerFactoryConfigurer configurer) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
+        configurer.configure(factory, connectionFactory);
         factory.setMessageConverter(messageConverter());
         return factory;
     }
@@ -281,5 +283,51 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(billingDlqQueue())
                 .to(billingDlqExchange())
                 .with(BILLING_DLQ_ROUTING_KEY);
+    }
+
+    // ==================== UPLOAD EVENTS ====================
+
+    public static final String UPLOAD_EXCHANGE = "upload.exchange";
+    public static final String UPLOAD_QUEUE = "upload.queue";
+    public static final String UPLOAD_ROUTING_KEY = "upload.#";
+    public static final String UPLOAD_DLQ_EXCHANGE = "upload.dlq.exchange";
+    public static final String UPLOAD_DLQ_QUEUE = "upload.dlq.queue";
+    public static final String UPLOAD_DLQ_ROUTING_KEY = "upload.dlq";
+
+    @Bean
+    public TopicExchange uploadExchange() {
+        return new TopicExchange(UPLOAD_EXCHANGE);
+    }
+
+    @Bean
+    public Queue uploadQueue() {
+        return QueueBuilder.durable(UPLOAD_QUEUE)
+                .withArgument("x-dead-letter-exchange", UPLOAD_DLQ_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", UPLOAD_DLQ_ROUTING_KEY)
+                .build();
+    }
+
+    @Bean
+    public Binding uploadBinding() {
+        return BindingBuilder.bind(uploadQueue())
+                .to(uploadExchange())
+                .with(UPLOAD_ROUTING_KEY);
+    }
+
+    @Bean
+    public TopicExchange uploadDlqExchange() {
+        return new TopicExchange(UPLOAD_DLQ_EXCHANGE);
+    }
+
+    @Bean
+    public Queue uploadDlqQueue() {
+        return QueueBuilder.durable(UPLOAD_DLQ_QUEUE).build();
+    }
+
+    @Bean
+    public Binding uploadDlqBinding() {
+        return BindingBuilder.bind(uploadDlqQueue())
+                .to(uploadDlqExchange())
+                .with(UPLOAD_DLQ_ROUTING_KEY);
     }
 }
