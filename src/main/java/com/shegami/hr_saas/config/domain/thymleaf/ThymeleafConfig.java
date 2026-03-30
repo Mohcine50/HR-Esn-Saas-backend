@@ -10,17 +10,31 @@ public class ThymeleafConfig {
     @Bean
     public SpringTemplateEngine templateEngine() {
         SpringTemplateEngine engine = new SpringTemplateEngine();
-        engine.setTemplateResolver(templateResolver());
+        engine.addTemplateResolver(emailTemplateResolver());
+        engine.addTemplateResolver(standardTemplateResolver());
         return engine;
     }
 
-    @Bean
-    public ClassLoaderTemplateResolver templateResolver() {
+    private ClassLoaderTemplateResolver emailTemplateResolver() {
         ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
         resolver.setPrefix("templates/emails/");
         resolver.setSuffix(".html");
         resolver.setTemplateMode("HTML");
         resolver.setCharacterEncoding("UTF-8");
+        resolver.setOrder(1);
+        resolver.setCheckExistence(true);
+        resolver.setCacheable(false);
+        return resolver;
+    }
+
+    private ClassLoaderTemplateResolver standardTemplateResolver() {
+        ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
+        resolver.setPrefix("templates/");
+        resolver.setSuffix(".html");
+        resolver.setTemplateMode("HTML");
+        resolver.setCharacterEncoding("UTF-8");
+        resolver.setOrder(2);
+        resolver.setCheckExistence(true);
         resolver.setCacheable(false);
         return resolver;
     }
