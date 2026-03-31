@@ -250,6 +250,6 @@ public class UploadServiceImpl implements UploadService {
         file.setUploader(uploader);
         file.setTenant(tenant);
 
-        return uploadFileRepository.save(file);
+        return uploadFileRepository.saveAndFlush(file);
     }
 }

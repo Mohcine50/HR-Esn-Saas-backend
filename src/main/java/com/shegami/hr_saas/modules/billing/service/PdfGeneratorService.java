@@ -26,7 +26,6 @@ public class PdfGeneratorService {
 
             // Render HTML using Thymeleaf
             String htmlContent = templateEngine.process("invoice", context);
-            log.info("HTML content: {}", htmlContent);
             // Convert HTML to PDF using OpenHTMLToPDF
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
