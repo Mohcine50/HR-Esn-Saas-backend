@@ -65,7 +65,7 @@ public class UploadServiceImpl implements UploadService {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         String userId = UserContextHolder.getCurrentUserContext().userId();
 
-        log.info("[Upload] Initiating upload | tenantId={} userId={}", tenantId, userId);
+        log.info("Initiating upload | tenantId={} userId={}", tenantId, userId);
 
         User user = userService.findUserByUserId(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
@@ -135,7 +135,7 @@ public class UploadServiceImpl implements UploadService {
             }
         }
 
-        log.info("[Upload] Upload initiated | fileId={} key={} isPublic={}", saved.getFileId(), s3Key, isPublic);
+        log.info("Upload initiated | fileId={} key={} isPublic={}", saved.getFileId(), s3Key, isPublic);
 
         return new UploadResponse(saved.getFileId(), uploadUrl);
 
@@ -147,17 +147,17 @@ public class UploadServiceImpl implements UploadService {
         UploadFile file = uploadFileRepository.findById(fileId)
                 .orElseThrow(() -> new ResourceNotFoundException("File not found: " + fileId));
 
-        log.info("[Upload] Completing upload | fileId={} key={}", fileId, file.getS3Key());
+        log.info("Completing upload | fileId={} key={}", fileId, file.getS3Key());
 
         if (!doesObjectExist(file.getS3Key())) {
-            log.warn("[Upload] Object not found on S3 | fileId={} key={}", fileId, file.getS3Key());
+            log.warn("Object not found on S3 | fileId={} key={}", fileId, file.getS3Key());
             throw new StorageUploadException("File not found on storage: " + file.getS3Key());
         }
 
         file.setStatus(FileStatus.AVAILABLE);
         uploadFileRepository.save(file);
 
-        log.info("[Upload] Upload completed | fileId={} isPublic={}", fileId, file.isPublic());
+        log.info("Upload completed | fileId={} isPublic={}", fileId, file.isPublic());
     }
 
     @Transactional(readOnly = true)
@@ -220,7 +220,7 @@ public class UploadServiceImpl implements UploadService {
         } catch (NoSuchKeyException e) {
             return false;
         } catch (S3Exception e) {
-            log.error("[Upload] S3 error checking object | key={} error={}", s3Key, e.getMessage());
+            log.error("S3 error checking object | key={} error={}", s3Key, e.getMessage());
             throw e;
         }
     }
@@ -235,7 +235,7 @@ public class UploadServiceImpl implements UploadService {
         String s3Key = String.format("%s/%s/%s/%s-%s", prefix, tenant.getTenantId(), fileType.name().toLowerCase(),
                 UUID.randomUUID(), fileName);
 
-        log.info("[Upload] Internal upload | tenantId={} fileType={} key={}", tenant.getTenantId(), fileType, s3Key);
+        log.info("Internal upload | tenantId={} fileType={} key={}", tenant.getTenantId(), fileType, s3Key);
 
         String publicUrl = isPublic ? "%s/%s/%s".formatted(endpoint, bucketName, s3Key) : null;
 

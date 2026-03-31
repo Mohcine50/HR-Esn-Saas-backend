@@ -264,12 +264,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         @RabbitListener(queues = RabbitMQConfig.BILLING_QUEUE)
         @Override
         public void handleTimesheetApproved(TimesheetApprovedEvent event) {
-                log.info("[Billing] Received TimesheetApprovedEvent | timesheetId={} tenantId={}",
+                log.info("Received TimesheetApprovedEvent | timesheetId={} tenantId={}",
                                 event.getTimesheetId(), event.getTenantId());
 
                 // Idempotency guard — safe against RabbitMQ message redelivery
                 if (invoiceRepository.existsByTimesheetTimesheetId(event.getTimesheetId())) {
-                        log.warn("[Billing] Duplicate event detected, invoice already exists | timesheetId={}",
+                        log.warn("Duplicate event detected, invoice already exists | timesheetId={}",
                                         event.getTimesheetId());
                         return;
                 }
@@ -279,21 +279,21 @@ public class InvoiceServiceImpl implements InvoiceService {
                                 .orElseThrow(() -> new TimesheetNotFoundException(
                                                 "Timesheet not found: " + event.getTimesheetId()));
 
-                log.info("[Billing] Timesheet resolved | timesheetId={} status={}",
+                log.info("Timesheet resolved | timesheetId={} status={}",
                                 timesheet.getTimesheetId(), timesheet.getStatus());
 
                 // Step 1: Persist invoice — short, focused transaction
                 Invoice savedInvoice = createAndSaveInvoice(timesheet);
-                log.info("[Billing] Invoice persisted | invoiceId={}", savedInvoice.getInvoiceId());
+                log.info("Invoice persisted | invoiceId={}", savedInvoice.getInvoiceId());
 
                 // Step 2: Generate PDF — I/O outside any transaction
                 byte[] pdfBytes;
                 try {
                         pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
-                        log.info("[Billing] PDF generated | invoiceId={} sizeBytes={}", savedInvoice.getInvoiceId(),
+                        log.info("PDF generated | invoiceId={} sizeBytes={}", savedInvoice.getInvoiceId(),
                                         pdfBytes.length);
                 } catch (Exception e) {
-                        log.error("[Billing] PDF generation failed | invoiceId={}", savedInvoice.getInvoiceId(), e);
+                        log.error("PDF generation failed | invoiceId={}", savedInvoice.getInvoiceId(), e);
                         markAsPdfPending(savedInvoice.getInvoiceId());
                         // Invoice is persisted safely — a retry scheduler can regenerate the PDF later
                         // Do NOT notify the user: invoice is incomplete at this point
@@ -304,9 +304,9 @@ public class InvoiceServiceImpl implements InvoiceService {
                 Invoice invoiceWithPdf;
                 try {
                         invoiceWithPdf = attachPdfToInvoice(savedInvoice, pdfBytes, timesheet.getTenant());
-                        log.info("[Billing] PDF metadata attached | invoiceId={}", invoiceWithPdf.getInvoiceId());
+                        log.info("PDF metadata attached | invoiceId={}", invoiceWithPdf.getInvoiceId());
                 } catch (Exception e) {
-                        log.error("[Billing] Failed to attach PDF to invoice | invoiceId={}",
+                        log.error("Failed to attach PDF to invoice | invoiceId={}",
                                         savedInvoice.getInvoiceId(), e);
                         markAsPdfPending(savedInvoice.getInvoiceId());
                         return;
@@ -472,7 +472,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         private void generateAndDispatchPdf(Invoice invoice, Tenant tenant, User createdBy) {
                 try {
                         byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(invoice);
-                        log.info("[Invoice] PDF generated | invoiceId={} sizeBytes={}", invoice.getInvoiceId(),
+                        log.info("PDF generated | invoiceId={} sizeBytes={}", invoice.getInvoiceId(),
                                         pdfBytes.length);
 
                         UploadFile uploadFile = uploadService.uploadInternalFile(
