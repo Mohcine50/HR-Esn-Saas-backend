@@ -1,11 +1,9 @@
 package com.shegami.hr_saas.shared.exception;
 
 import com.shegami.hr_saas.modules.auth.exception.*;
-import com.shegami.hr_saas.modules.billing.exception.InvoiceNotFoundException;
+import com.shegami.hr_saas.modules.billing.exception.*;
 import com.shegami.hr_saas.modules.hr.exception.*;
-import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
-import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
-import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
+import com.shegami.hr_saas.modules.mission.exceptions.*;
 import com.shegami.hr_saas.modules.timesheet.exceptions.*;
 import com.shegami.hr_saas.modules.upload.exceptions.StorageUploadException;
 import com.shegami.hr_saas.shared.enums.ErrorCode;
@@ -127,6 +125,11 @@ public class ApiExceptionHandler {
         return build(ErrorCode.CONSULTANT_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(ClientNotFoundException.class)
+    public ResponseEntity<ApiException> handleClientNotFound(ClientNotFoundException ex) {
+        return build(ErrorCode.CLIENT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
     // ── Timesheet ─────────────────────────────────────────────────────────────
 
     @ExceptionHandler(TimesheetNotFoundException.class)
@@ -139,11 +142,37 @@ public class ApiExceptionHandler {
         return build(ErrorCode.EMPTY_TIMESHEET, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
+    @ExceptionHandler(TimesheetModificationForbiddenException.class)
+    public ResponseEntity<ApiException> handleTimesheetModificationForbidden(
+            TimesheetModificationForbiddenException ex) {
+        return build(ErrorCode.TIMESHEET_MODIFICATION_FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(DuplicateTimesheetException.class)
+    public ResponseEntity<ApiException> handleDuplicateTimesheet(DuplicateTimesheetException ex) {
+        return build(ErrorCode.DUPLICATE_TIMESHEET, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(IllegalTimesheetStateException.class)
+    public ResponseEntity<ApiException> handleIllegalTimesheetState(IllegalTimesheetStateException ex) {
+        return build(ErrorCode.ILLEGAL_TIMESHEET_STATE, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
     // ── Billing ──────────────────────────────────────────────────────────────
 
     @ExceptionHandler(InvoiceNotFoundException.class)
     public ResponseEntity<ApiException> handleInvoiceNotFound(InvoiceNotFoundException ex) {
         return build(ErrorCode.INVOICE_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(IllegalInvoiceStateException.class)
+    public ResponseEntity<ApiException> handleIllegalInvoiceState(IllegalInvoiceStateException ex) {
+        return build(ErrorCode.ILLEGAL_INVOICE_STATE, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    @ExceptionHandler(InvoiceFileNotFoundException.class)
+    public ResponseEntity<ApiException> handleInvoiceFileNotFound(InvoiceFileNotFoundException ex) {
+        return build(ErrorCode.INVOICE_FILE_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
     // ── Storage ───────────────────────────────────────────────────────────────

@@ -31,13 +31,19 @@ public enum ErrorCode {
     MISSION_NOT_FOUND("Mission not found"),
     PROJECT_NOT_FOUND("Project not found"),
     CONSULTANT_NOT_FOUND("Consultant not found"),
+    CLIENT_NOT_FOUND("Client not found"),
 
     // ── Timesheet ─────────────────────────────────────────────────────────────
     TIMESHEET_NOT_FOUND("Timesheet not found"),
     EMPTY_TIMESHEET("Cannot submit an empty timesheet"),
+    TIMESHEET_MODIFICATION_FORBIDDEN("Timesheet is locked and cannot be modified"),
+    DUPLICATE_TIMESHEET("A timesheet already exists for this period"),
+    ILLEGAL_TIMESHEET_STATE("Illegal state transition for timesheet"),
 
     // ── Billing ──────────────────────────────────────────────────────────────
     INVOICE_NOT_FOUND("Invoice not found"),
+    ILLEGAL_INVOICE_STATE("Illegal state transition for invoice"),
+    INVOICE_FILE_NOT_FOUND("Invoice PDF file not found"),
 
     // ── Storage ───────────────────────────────────────────────────────────────
     STORAGE_UPLOAD_FAILED("File upload failed"),
