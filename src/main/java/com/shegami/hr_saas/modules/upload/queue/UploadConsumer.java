@@ -54,7 +54,8 @@ public class UploadConsumer {
         }
 
         try {
-            log.info("Uploading to S3 | key: {} | bucket: {}", file.getS3Key(), bucketName);
+            log.info("[UploadConsumer] Uploading to S3 | key: {} | bucket: {} | contentType: {}",
+                    file.getS3Key(), bucketName, file.getContentType());
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
@@ -68,10 +69,11 @@ public class UploadConsumer {
             file.setStatus(FileStatus.AVAILABLE);
             uploadFileRepository.save(file);
 
-            log.info("Successfully uploaded file: {} to S3", fileId);
+            log.info("[UploadConsumer] Successfully uploaded file: {} to S3 key: {}", fileId, file.getS3Key());
         } catch (Exception e) {
-            log.error("[Upload] Failed to upload file: {} to S3", fileId, e);
-            throw new RuntimeException("S3 upload failed for file: " + fileId, e);
+            log.error("[UploadConsumer] Failed to upload file: {} to bucket: {} | error: {}",
+                    fileId, bucketName, e.getMessage());
+            throw new RuntimeException("S3 upload failed for file: " + fileId + " in bucket: " + bucketName, e);
         }
     }
 }

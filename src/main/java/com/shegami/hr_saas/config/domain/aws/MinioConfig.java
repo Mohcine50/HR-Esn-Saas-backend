@@ -17,39 +17,52 @@ import java.net.URI;
 @Profile("local")
 public class MinioConfig {
 
-    @Value("${aws.s3.endpoint}")
-    private String endpoint;
+        @Value("${aws.s3.endpoint}")
+        private String endpoint;
 
-    @Value("${aws.s3.access-key}")
-    private String accessKey;
+        @Value("${aws.s3.access-key}")
+        private String accessKey;
 
-    @Value("${aws.s3.secret-key}")
-    private String secretKey;
+        @Value("${aws.s3.secret-key}")
+        private String secretKey;
 
-    @Value("${aws.s3.region}")
-    private String region;
+        @Value("${aws.s3.region}")
+        private String region;
 
-    @Bean
-    public S3Client getS3Client() {
-        return S3Client.builder()
-                .region(Region.of(region))
-                .endpointOverride(URI.create(endpoint))
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(accessKey, secretKey)))
-                .forcePathStyle(true)
-                .build();
-    }
+        @Value("${aws.s3.bucket-name}")
+        private String bucketName;
 
-    @Bean
-    public S3Presigner getS3Presigner() {
-        return S3Presigner.builder()
-                .region(Region.of(region))
-                .endpointOverride(URI.create(endpoint))
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(accessKey, secretKey)))
-                .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(true)
-                        .build())
-                .build();
-    }
+        @Bean
+        public S3Client getS3Client() {
+                S3Client client = S3Client.builder()
+                                .region(Region.of(region))
+                                .endpointOverride(URI.create(endpoint))
+                                .credentialsProvider(StaticCredentialsProvider.create(
+                                                AwsBasicCredentials.create(accessKey, secretKey)))
+                                .forcePathStyle(true)
+                                .build();
+
+                // Ensure bucket exists at startup
+                try {
+                        client.createBucket(r -> r.bucket(bucketName));
+                } catch (Exception e) {
+                        // Ignore if it already exists or if it fails for other reasons (user will see
+                        // it later if it's a real issue)
+                }
+
+                return client;
+        }
+
+        @Bean
+        public S3Presigner getS3Presigner() {
+                return S3Presigner.builder()
+                                .region(Region.of(region))
+                                .endpointOverride(URI.create(endpoint))
+                                .credentialsProvider(StaticCredentialsProvider.create(
+                                                AwsBasicCredentials.create(accessKey, secretKey)))
+                                .serviceConfiguration(S3Configuration.builder()
+                                                .pathStyleAccessEnabled(true)
+                                                .build())
+                                .build();
+        }
 }
