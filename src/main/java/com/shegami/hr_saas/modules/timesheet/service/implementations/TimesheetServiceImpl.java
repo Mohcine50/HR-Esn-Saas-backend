@@ -3,6 +3,7 @@ package com.shegami.hr_saas.modules.timesheet.service.implementations;
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
+import com.shegami.hr_saas.modules.billing.entity.Invoice;
 import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.hr.exception.EmployeeNotFoundException;
 import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
@@ -30,8 +31,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
+
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,18 +57,24 @@ public class TimesheetServiceImpl implements TimesheetService {
     private final ConsultantRepository consultantRepository;
     private final RabbitTemplate rabbitTemplate;
 
+    // -------------------------------------------------------------------------
+    // Public API
+    // -------------------------------------------------------------------------
+
     @Transactional
     @Override
     public TimesheetResponse createTimesheet(CreateTimesheetRequest req) {
-
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         String consultantId = UserContextHolder.getCurrentUserContext().userId();
 
-        Consultant consultant = consultantRepository.findByUserUserId(consultantId)
-                .orElseThrow(() -> new ConsultantNotFoundException("Consultant not found for user: " + consultantId));
-
         log.info("[Timesheet] Creating timesheet | tenantId={} missionId={} consultantId={} period={}/{}",
-                tenantId, req.missionId(), consultantId, req.year());
+                tenantId, req.missionId(), consultantId, req.year(), req.month());
+
+        Consultant consultant = consultantRepository.findByUserUserId(consultantId)
+                .orElseThrow(() -> {
+                    log.warn("[Timesheet] Consultant not found | userId={}", consultantId);
+                    return new ConsultantNotFoundException("Consultant not found for user: " + consultantId);
+                });
 
         Tenant tenant = tenantService.getTenant(tenantId);
 
@@ -74,13 +85,13 @@ public class TimesheetServiceImpl implements TimesheetService {
                     return new MissionNotFoundException("Mission not found: " + req.missionId());
                 });
 
-        boolean exists = timesheetRepository
-                .existsByMissionAndConsultantAndPeriod(
-                        req.missionId(), consultantId, req.month(), req.year());
-        if (exists) {
+        boolean alreadyExists = timesheetRepository
+                .existsByMissionAndConsultantAndPeriod(req.missionId(), consultantId, req.month(), req.year());
+        if (alreadyExists) {
             log.warn("[Timesheet] Duplicate timesheet rejected | missionId={} consultantId={} period={}/{}",
                     req.missionId(), consultantId, req.month(), req.year());
-            throw new IllegalStateException("A timesheet already exists for this period.");
+            throw new DuplicateTimesheetException(
+                    "A timesheet already exists for this mission and period.");
         }
 
         Timesheet timesheet = new Timesheet();
@@ -92,8 +103,7 @@ public class TimesheetServiceImpl implements TimesheetService {
         timesheet.setConsultant(consultant);
 
         Timesheet saved = timesheetRepository.save(timesheet);
-        log.info("[Timesheet] Timesheet created | timesheetId={} missionId={} consultantId={} period={}/{}",
-                saved.getTimesheetId(), req.missionId(), consultantId, req.month(), req.year());
+        log.info("[Timesheet] Timesheet created | timesheetId={}", saved.getTimesheetId());
 
         return mapper.toResponse(saved);
     }
@@ -101,22 +111,20 @@ public class TimesheetServiceImpl implements TimesheetService {
     @Transactional
     @Override
     public TimesheetResponse saveEntries(String timesheetId, SaveEntriesRequest req) {
-
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         log.info("[Timesheet] Saving entries | timesheetId={} tenantId={} entryCount={}",
                 timesheetId, tenantId, req.entries().size());
 
-        Timesheet timesheet = getEditableTimesheet(timesheetId, tenantId);
-
+        Timesheet timesheet = resolveEditableTimesheet(timesheetId, tenantId);
         YearMonth period = YearMonth.of(timesheet.getYear(), timesheet.getMonth());
-        for (UpsertEntryRequest entry : req.entries()) {
+
+        req.entries().forEach(entry -> {
             validateDateInPeriod(entry.date(), period);
             validateDateInMissionRange(entry.date(), timesheet.getMission());
             validateQuantity(entry.quantity());
-        }
+        });
 
         timesheet.getEntries().clear();
-
         req.entries().forEach(e -> {
             TimesheetEntry entry = new TimesheetEntry();
             entry.setTimesheet(timesheet);
@@ -135,11 +143,10 @@ public class TimesheetServiceImpl implements TimesheetService {
     @Transactional
     @Override
     public TimesheetResponse submitTimesheet(String timesheetId) {
-
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         log.info("[Timesheet] Submitting timesheet | timesheetId={} tenantId={}", timesheetId, tenantId);
 
-        Timesheet timesheet = getEditableTimesheet(timesheetId, tenantId);
+        Timesheet timesheet = resolveEditableTimesheet(timesheetId, tenantId);
 
         if (timesheet.getEntries().isEmpty()) {
             log.warn("[Timesheet] Submit rejected — no entries | timesheetId={}", timesheetId);
@@ -150,39 +157,28 @@ public class TimesheetServiceImpl implements TimesheetService {
         Timesheet saved = timesheetRepository.save(timesheet);
         log.info("[Timesheet] Timesheet submitted | timesheetId={}", timesheetId);
 
-        if (saved.getMission().getAccountManager() != null
-                && saved.getMission().getAccountManager().getUser() != null) {
-            String managerUserId = saved.getMission().getAccountManager().getUser().getUserId();
-            NotificationMessage msg = NotificationMessage.builder()
-                    .userId(managerUserId)
-                    .notificationType(NotificationType.TIMESHEET_SUBMITTED)
-                    .title(NotificationType.TIMESHEET_SUBMITTED.getDefaultTitle())
-                    .message("A timesheet was submitted by "
-                            + (saved.getConsultant() != null ? saved.getConsultant().getFirstName() : "a consultant")
-                            + " for mission '" + saved.getMission().getTitle() + "'.")
-                    .entityType(EntityType.TIMESHEET)
-                    .entityId(saved.getTimesheetId())
-                    .actorId(UserContextHolder.getCurrentUserContext().userId())
-                    .build();
-            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.timesheet.submitted",
-                    msg);
-        }
+        // Notify account manager after commit — notification failure must not roll back
+        // submission
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                sendTimesheetSubmittedNotification(saved);
+            }
+        });
 
         return mapper.toResponse(saved);
     }
 
     @Transactional
     @Override
-    public TimesheetResponse reviewTimesheet(
-            String timesheetId,
-            ReviewTimesheetRequest req) {
-
+    public TimesheetResponse reviewTimesheet(String timesheetId, ReviewTimesheetRequest req) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         String userId = UserContextHolder.getCurrentUserContext().userId();
+
         log.info("[Timesheet] Reviewing timesheet | timesheetId={} reviewerId={} approved={}",
                 timesheetId, userId, req.approved());
 
-        Employee manager = employeeRepository.findByUserUserId(userId)
+        Employee reviewer = employeeRepository.findByUserUserId(userId)
                 .orElseThrow(() -> {
                     log.warn("[Timesheet] Reviewer not found | userId={}", userId);
                     return new EmployeeNotFoundException("Employee not found: " + userId);
@@ -191,15 +187,16 @@ public class TimesheetServiceImpl implements TimesheetService {
         Timesheet timesheet = timesheetRepository
                 .findByIdAndTenant(timesheetId, tenantId)
                 .orElseThrow(() -> {
-                    log.warn("[Timesheet] Timesheet not found for review | timesheetId={} tenantId={}", timesheetId,
-                            tenantId);
-                    return new TimesheetNotFoundException("Timesheet not found.");
+                    log.warn("[Timesheet] Timesheet not found for review | timesheetId={} tenantId={}",
+                            timesheetId, tenantId);
+                    return new TimesheetNotFoundException("Timesheet not found: " + timesheetId);
                 });
 
         if (timesheet.getStatus() != TimesheetStatus.SUBMITTED) {
-            log.warn("[Timesheet] Review rejected — wrong status | timesheetId={} status={}", timesheetId,
-                    timesheet.getStatus());
-            throw new IllegalStateException("Only SUBMITTED timesheets can be reviewed.");
+            log.warn("[Timesheet] Review rejected — wrong status | timesheetId={} status={}",
+                    timesheetId, timesheet.getStatus());
+            throw new IllegalTimesheetStateException(
+                    "Only SUBMITTED timesheets can be reviewed. Current status: " + timesheet.getStatus());
         }
 
         if (!req.approved() && (req.comment() == null || req.comment().isBlank())) {
@@ -207,56 +204,43 @@ public class TimesheetServiceImpl implements TimesheetService {
             throw new IllegalArgumentException("A comment is required when rejecting a timesheet.");
         }
 
-        timesheet.setStatus(req.approved() ? TimesheetStatus.APPROVED : TimesheetStatus.REJECTED);
+        TimesheetStatus newStatus = req.approved() ? TimesheetStatus.APPROVED : TimesheetStatus.REJECTED;
+        timesheet.setStatus(newStatus);
         timesheet.setValidatedAt(LocalDateTime.now());
-        timesheet.setValidatedBy(manager);
-
-        // On rejection: reset to DRAFT so consultant can correct and resubmit
-        if (!req.approved()) {
-            timesheet.setStatus(TimesheetStatus.REJECTED);
-        }
+        timesheet.setValidatedBy(reviewer);
 
         Timesheet saved = timesheetRepository.save(timesheet);
-        log.info("[Timesheet] Timesheet review completed | timesheetId={} newStatus={} reviewerId={}",
+        log.info("[Timesheet] Review completed | timesheetId={} newStatus={} reviewerId={}",
                 timesheetId, saved.getStatus(), userId);
 
-        if (saved.getStatus() == TimesheetStatus.APPROVED) {
-            TimesheetApprovedEvent event = new TimesheetApprovedEvent(
-                    saved.getTimesheetId(),
-                    saved.getTenant().getTenantId(),
-                    saved.getMission().getMissionId());
-            rabbitTemplate.convertAndSend(RabbitMQConfig.BILLING_EXCHANGE, "billing.timesheet.approved", event);
-            log.info("[Timesheet] Published TimesheetApprovedEvent | timesheetId={}", saved.getTimesheetId());
-        }
-
-        if (saved.getConsultant() != null && saved.getConsultant().getUser() != null) {
-            String consultantUserId = saved.getConsultant().getUser().getUserId();
-            String statusVerb = saved.getStatus() == TimesheetStatus.APPROVED ? "approved" : "rejected";
-            NotificationMessage msg = NotificationMessage.builder()
-                    .userId(consultantUserId)
-                    .notificationType(
-                            saved.getStatus() == TimesheetStatus.APPROVED ? NotificationType.TIMESHEET_APPROVED
-                                    : NotificationType.TIMESHEET_REJECTED)
-                    .title(saved.getStatus() == TimesheetStatus.APPROVED
-                            ? NotificationType.TIMESHEET_APPROVED.getDefaultTitle()
-                            : NotificationType.TIMESHEET_REJECTED.getDefaultTitle())
-                    .message("Your timesheet for mission '" + saved.getMission().getTitle() + "' was \b" + statusVerb
-                            + "\b.")
-                    .entityType(EntityType.TIMESHEET)
-                    .entityId(saved.getTimesheetId())
-                    .actorId(userId)
-                    .build();
-            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.timesheet.reviewed", msg);
-        }
+        // CRITICAL: Both the billing event and the notification are published AFTER
+        // commit.
+        //
+        // Publishing inside the transaction caused a race condition where the billing
+        // consumer could pick up the event and query the timesheet before this
+        // transaction
+        // committed, seeing stale or missing data. afterCommit() guarantees the
+        // consumer
+        // always reads the final, committed state.
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                if (saved.getStatus() == TimesheetStatus.APPROVED) {
+                    publishTimesheetApprovedEvent(saved);
+                }
+                sendTimesheetReviewedNotification(saved, userId);
+            }
+        });
 
         return mapper.toResponse(saved);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TimesheetResponse> getPendingTimesheets() {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         String userId = UserContextHolder.getCurrentUserContext().userId();
-        log.debug("[Timesheet] Fetching pending timesheets for manager | managerId={} tenantId={}", userId, tenantId);
+        log.debug("[Timesheet] Fetching pending timesheets | managerId={} tenantId={}", userId, tenantId);
 
         List<TimesheetResponse> pending = timesheetRepository
                 .findSubmittedTimesheetsForManager(userId, tenantId)
@@ -264,15 +248,15 @@ public class TimesheetServiceImpl implements TimesheetService {
                 .map(mapper::toResponse)
                 .toList();
 
-        log.debug("[Timesheet] Pending timesheets found | managerId={} count={}", userId, pending.size());
+        log.debug("[Timesheet] Pending timesheets resolved | managerId={} count={}", userId, pending.size());
         return pending;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TimesheetResponse> getConsultantHistory(String consultantId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-
-        log.debug("[Timesheet] Fetching history | consultantId={} tenantId={}", consultantId, tenantId);
+        log.debug("[Timesheet] Fetching consultant history | consultantId={} tenantId={}", consultantId, tenantId);
 
         List<TimesheetResponse> history = timesheetRepository
                 .findHistoryByConsultant(consultantId, tenantId)
@@ -280,11 +264,12 @@ public class TimesheetServiceImpl implements TimesheetService {
                 .map(mapper::toResponse)
                 .toList();
 
-        log.debug("[Timesheet] History fetched | consultantId={} count={}", consultantId, history.size());
+        log.debug("[Timesheet] History resolved | consultantId={} count={}", consultantId, history.size());
         return history;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TimesheetResponse getTimesheet(String timesheetId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
         log.debug("[Timesheet] Fetching timesheet | timesheetId={} tenantId={}", timesheetId, tenantId);
@@ -293,8 +278,8 @@ public class TimesheetServiceImpl implements TimesheetService {
                 .findByIdAndTenant(timesheetId, tenantId)
                 .map(mapper::toResponse)
                 .orElseThrow(() -> {
-                    log.warn("[Timesheet] Timesheet not found | timesheetId={} tenantId={}", timesheetId, tenantId);
-                    return new IllegalArgumentException("Timesheet not found.");
+                    log.warn("[Timesheet] Not found | timesheetId={} tenantId={}", timesheetId, tenantId);
+                    return new TimesheetNotFoundException("Timesheet not found: " + timesheetId);
                 });
     }
 
@@ -309,38 +294,129 @@ public class TimesheetServiceImpl implements TimesheetService {
                 .findAllByTenantTenantId(tenantId, pageable)
                 .map(mapper::toResponse);
 
-        log.debug("[Timesheet] All timesheets fetched | tenantId={} total={}", tenantId, result.getTotalElements());
+        log.debug("[Timesheet] All timesheets resolved | tenantId={} total={}", tenantId, result.getTotalElements());
         return result;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TimesheetResponse> getApprovedTimesheetsByClient(String clientId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        log.debug("[Timesheet] Fetching approved timesheets for client: {} | tenantId={}", clientId, tenantId);
+        log.debug("[Timesheet] Fetching approved timesheets by client | clientId={} tenantId={}", clientId, tenantId);
+
         return timesheetRepository.findApprovedByClient(clientId, tenantId)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
     }
 
+    // -------------------------------------------------------------------------
+    // Internal — Event Publishing
+    // -------------------------------------------------------------------------
+
     /**
-     * Only DRAFT or REJECTED timesheets can be edited
+     * Published only in afterCommit() to eliminate the race condition where
+     * the billing consumer could read the timesheet before this transaction
+     * commits.
      */
-    private Timesheet getEditableTimesheet(String timesheetId, String tenantId) {
+    private void publishTimesheetApprovedEvent(Timesheet timesheet) {
+        log.info("[Timesheet] Publishing TimesheetApprovedEvent | timesheetId={}", timesheet.getTimesheetId());
+        TimesheetApprovedEvent event = new TimesheetApprovedEvent(
+                timesheet.getTimesheetId(),
+                timesheet.getTenant().getTenantId(),
+                timesheet.getMission().getMissionId());
+        rabbitTemplate.convertAndSend(RabbitMQConfig.BILLING_EXCHANGE, "billing.timesheet.approved", event);
+        log.info("[Timesheet] TimesheetApprovedEvent published | timesheetId={}", timesheet.getTimesheetId());
+    }
+
+    // -------------------------------------------------------------------------
+    // Internal — Notification Helpers
+    // -------------------------------------------------------------------------
+
+    private void sendTimesheetSubmittedNotification(Timesheet timesheet) {
+        Employee accountManager = timesheet.getMission().getAccountManager();
+        if (accountManager == null || accountManager.getUser() == null) {
+            log.warn("[Timesheet] Skipping submission notification — no account manager | timesheetId={}",
+                    timesheet.getTimesheetId());
+            return;
+        }
+
+        String consultantName = timesheet.getConsultant() != null
+                ? timesheet.getConsultant().getFirstName()
+                : "A consultant";
+
+        NotificationMessage msg = NotificationMessage.builder()
+                .userId(accountManager.getUser().getUserId())
+                .notificationType(NotificationType.TIMESHEET_SUBMITTED)
+                .title(NotificationType.TIMESHEET_SUBMITTED.getDefaultTitle())
+                .message(String.format("%s submitted a timesheet for mission '%s'.",
+                        consultantName, timesheet.getMission().getTitle()))
+                .entityType(EntityType.TIMESHEET)
+                .entityId(timesheet.getTimesheetId())
+                .actorId(UserContextHolder.getCurrentUserContext().userId())
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                "notification.timesheet.submitted", msg);
+
+        log.info("[Timesheet] Submission notification sent | timesheetId={} recipientUserId={}",
+                timesheet.getTimesheetId(), msg.getUserId());
+    }
+
+    private void sendTimesheetReviewedNotification(Timesheet timesheet, String reviewerUserId) {
+        if (timesheet.getConsultant() == null || timesheet.getConsultant().getUser() == null) {
+            log.warn("[Timesheet] Skipping review notification — no consultant user | timesheetId={}",
+                    timesheet.getTimesheetId());
+            return;
+        }
+
+        boolean approved = timesheet.getStatus() == TimesheetStatus.APPROVED;
+        NotificationType notificationType = approved
+                ? NotificationType.TIMESHEET_APPROVED
+                : NotificationType.TIMESHEET_REJECTED;
+
+        NotificationMessage msg = NotificationMessage.builder()
+                .userId(timesheet.getConsultant().getUser().getUserId())
+                .notificationType(notificationType)
+                .title(notificationType.getDefaultTitle())
+                .message(String.format("Your timesheet for mission '%s' was %s.",
+                        timesheet.getMission().getTitle(), approved ? "approved" : "rejected"))
+                .entityType(EntityType.TIMESHEET)
+                .entityId(timesheet.getTimesheetId())
+                .actorId(reviewerUserId)
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                "notification.timesheet.reviewed", msg);
+
+        log.info("[Timesheet] Review notification sent | timesheetId={} status={} recipientUserId={}",
+                timesheet.getTimesheetId(), timesheet.getStatus(), msg.getUserId());
+    }
+
+    // -------------------------------------------------------------------------
+    // Internal — Validation & Guards
+    // -------------------------------------------------------------------------
+
+    /**
+     * Timesheets in SUBMITTED or APPROVED state are locked — they cannot be edited.
+     * DRAFT and REJECTED timesheets are open for modification.
+     */
+    private Timesheet resolveEditableTimesheet(String timesheetId, String tenantId) {
         Timesheet timesheet = timesheetRepository
                 .findByIdAndTenant(timesheetId, tenantId)
                 .orElseThrow(() -> {
                     log.warn("[Timesheet] Timesheet not found | timesheetId={} tenantId={}", timesheetId, tenantId);
-                    return new IllegalArgumentException("Timesheet not found.");
+                    return new TimesheetNotFoundException("Timesheet not found: " + timesheetId);
                 });
 
         if (timesheet.getStatus() == TimesheetStatus.SUBMITTED
                 || timesheet.getStatus() == TimesheetStatus.APPROVED) {
             log.warn("[Timesheet] Edit rejected — timesheet is locked | timesheetId={} status={}",
                     timesheetId, timesheet.getStatus());
-            throw new IllegalStateException(
-                    "Timesheet is locked. Status: " + timesheet.getStatus());
+            throw new TimesheetModificationForbiddenException(
+                    "Timesheet is locked and cannot be edited. Status: " + timesheet.getStatus());
         }
+
         return timesheet;
     }
 
@@ -351,19 +427,21 @@ public class TimesheetServiceImpl implements TimesheetService {
         }
     }
 
-    private void validateQuantity(Double quantity) {
-        if (quantity != 0.0 && quantity != 0.5 && quantity != 1.0) {
+    private void validateDateInMissionRange(LocalDate date, Mission mission) {
+        if (mission.getStartDate() != null && date.isBefore(mission.getStartDate())) {
             throw new IllegalArgumentException(
-                    "Quantity must be 0.0 (Off), 0.5 (Half-day), or 1.0 (Full day). Got: " + quantity);
+                    "Date " + date + " is before mission start date " + mission.getStartDate());
+        }
+        if (mission.getEndDate() != null && date.isAfter(mission.getEndDate())) {
+            throw new IllegalArgumentException(
+                    "Date " + date + " is after mission end date " + mission.getEndDate());
         }
     }
 
-    private void validateDateInMissionRange(LocalDate date, Mission mission) {
-        if (mission.getStartDate() != null && date.isBefore(mission.getStartDate())) {
-            throw new IllegalArgumentException("Date " + date + " is before mission start.");
-        }
-        if (mission.getEndDate() != null && date.isAfter(mission.getEndDate())) {
-            throw new IllegalArgumentException("Date " + date + " is after mission end.");
+    private void validateQuantity(Double quantity) {
+        if (quantity != 0.0 && quantity != 0.5 && quantity != 1.0) {
+            throw new IllegalArgumentException(
+                    "Quantity must be 0.0 (off), 0.5 (half-day), or 1.0 (full day). Got: " + quantity);
         }
     }
 }

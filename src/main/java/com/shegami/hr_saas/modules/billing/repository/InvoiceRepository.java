@@ -15,4 +15,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
     Optional<Invoice> findByInvoiceIdAndTenantTenantId(String invoiceId, String tenantId);
 
     Page<Invoice> findAllByTenantTenantId(String tenantId, Pageable pageable);
+
+    boolean existsByTimesheetTimesheetId(String timesheetId);
 }

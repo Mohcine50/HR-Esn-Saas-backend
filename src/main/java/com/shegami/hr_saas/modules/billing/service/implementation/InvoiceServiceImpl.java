@@ -4,12 +4,16 @@ import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
 import com.shegami.hr_saas.modules.billing.entity.Invoice;
 import com.shegami.hr_saas.modules.billing.entity.InvoiceLine;
+import com.shegami.hr_saas.modules.billing.exception.IllegalInvoiceStateException;
+import com.shegami.hr_saas.modules.billing.exception.InvoiceFileNotFoundException;
 import com.shegami.hr_saas.modules.billing.exception.InvoiceNotFoundException;
 import com.shegami.hr_saas.modules.billing.enums.InvoiceStatus;
 import com.shegami.hr_saas.modules.billing.repository.InvoiceRepository;
 import com.shegami.hr_saas.modules.billing.service.InvoiceService;
 import com.shegami.hr_saas.modules.billing.service.PdfGeneratorService;
 import com.shegami.hr_saas.modules.mission.entity.Client;
+import com.shegami.hr_saas.modules.mission.entity.Mission;
+import com.shegami.hr_saas.modules.mission.exceptions.ClientNotFoundException;
 import com.shegami.hr_saas.modules.timesheet.dto.TimesheetApprovedEvent;
 import com.shegami.hr_saas.modules.timesheet.entity.Timesheet;
 import com.shegami.hr_saas.modules.timesheet.entity.TimesheetEntry;
@@ -18,6 +22,8 @@ import com.shegami.hr_saas.modules.timesheet.repository.TimesheetRepository;
 import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
 import com.shegami.hr_saas.modules.notifications.enums.EntityType;
 import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
+import com.shegami.hr_saas.modules.hr.entity.Employee;
+import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +36,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Optional;
 
 import com.shegami.hr_saas.modules.upload.service.UploadService;
 import com.shegami.hr_saas.modules.upload.mapper.FileType;
@@ -51,7 +58,11 @@ import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
 import com.shegami.hr_saas.modules.billing.dto.CreateInvoiceRequest;
 import com.shegami.hr_saas.modules.billing.dto.CreateInvoiceLineRequest;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
+import com.shegami.hr_saas.modules.auth.entity.User;
 import java.util.Collections;
+
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -68,206 +79,85 @@ public class InvoiceServiceImpl implements InvoiceService {
         private final ClientRepository clientRepository;
         private final TenantService tenantService;
 
+        // -------------------------------------------------------------------------
+        // Public API — Manual Invoice Creation
+        // -------------------------------------------------------------------------
+
         @Override
         @Transactional
         public InvoiceDto createInvoice(CreateInvoiceRequest request) {
                 String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                log.info("[Invoice] Creating manual invoice | tenantId={} clientId={}", tenantId,
+                                request.getClientId());
+
                 Tenant tenant = tenantService.getTenant(tenantId);
+                Client client = resolveClient(request.getClientId(), tenantId);
 
-                Client client = clientRepository.findByClientIdAndTenantTenantId(request.getClientId(), tenantId)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Client not found: " + request.getClientId()));
-
-                String invoiceNumber = "INV-M-" + LocalDate.now().toString().replace("-", "") + "-"
-                                + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
-
-                Invoice invoice = new Invoice();
-                invoice.setTenant(tenant);
-                invoice.setInvoiceNumber(invoiceNumber);
-                invoice.setClient(client);
-                invoice.setClientNameAtBilling(client.getFullName());
-                invoice.setClientAddressAtBilling(client.getAddress() != null ? client.getAddress() : "N/A");
-                invoice.setVatNumberAtBilling(client.getVatNumber() != null ? client.getVatNumber() : "N/A");
-                invoice.setIssueDate(request.getIssueDate());
-                invoice.setDueDate(request.getDueDate());
-                invoice.setStatus(InvoiceStatus.DRAFT);
-
-                BigDecimal subTotal = BigDecimal.ZERO;
-                for (CreateInvoiceLineRequest lineReq : request.getLines()) {
-                        InvoiceLine line = new InvoiceLine();
-                        line.setTenant(tenant);
-                        line.setInvoice(invoice);
-                        line.setDescription(lineReq.getDescription());
-                        line.setQuantity(lineReq.getQuantity());
-                        line.setUnitPrice(lineReq.getUnitPrice());
-
-                        BigDecimal lineTotal = line.getQuantity().multiply(line.getUnitPrice());
-                        line.setTotalLineAmount(lineTotal);
-
-                        invoice.getInvoiceLines().add(line);
-                        subTotal = subTotal.add(lineTotal);
-                }
-
-                invoice.setSubTotal(subTotal);
-                BigDecimal vatRate = BigDecimal.valueOf(0.20); // Default 20%
-                BigDecimal vatAmount = subTotal.multiply(vatRate).setScale(2, RoundingMode.HALF_UP);
-                invoice.setVatAmount(vatAmount);
-                invoice.setTotalAmount(subTotal.add(vatAmount));
+                Invoice invoice = buildManualInvoice(request, tenant, client);
+                applyInvoiceLines(invoice, tenant, request.getLines());
+                calculateInvoiceTotals(invoice);
 
                 Invoice savedInvoice = invoiceRepository.save(invoice);
+                log.info("[Invoice] Invoice persisted | invoiceId={} invoiceNumber={}",
+                                savedInvoice.getInvoiceId(), savedInvoice.getInvoiceNumber());
 
-                // Generate and Upload PDF
-                try {
-                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
-                        UploadFile uploadFile = uploadService.uploadInternalFile(
-                                        pdfBytes,
-                                        savedInvoice.getInvoiceNumber() + ".pdf",
-                                        FileType.INVOICE,
-                                        "application/pdf",
-                                        tenant,
-                                        null); // System upload
-                        savedInvoice.setInvoiceFile(uploadFile);
-                        savedInvoice.setPdfS3Key(uploadFile.getS3Key());
-                        invoiceRepository.save(savedInvoice);
-                        // log the uploadFile content
-                        log.info("[CREATE INVOICE] UPLOADFile: {}", uploadFile.getFileId());
-                        rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
-                                        new FileUploadMessage(uploadFile.getFileId(), pdfBytes));
-                } catch (Exception e) {
-                        log.error("[CREATE INVOICE] Failed to generate/upload PDF for Invoice: {}",
-                                        savedInvoice.getInvoiceNumber(), e);
-                }
+                // PDF generation runs after commit — keeps the transaction short and ensures
+                // the invoice row is visible to any other process before we start slow I/O.
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                                generateAndDispatchPdf(savedInvoice, tenant, null);
+                        }
+                });
 
                 return billingMapper.toDto(savedInvoice, Collections.emptyList());
         }
 
-        @RabbitListener(queues = RabbitMQConfig.BILLING_QUEUE)
-        @Transactional
         @Override
-        public void handleTimesheetApproved(TimesheetApprovedEvent event) {
-                log.info("[Billing] Received TimesheetApprovedEvent for Timesheet ID: {}", event.getTimesheetId());
+        @Transactional
+        public InvoiceDto updateInvoice(String invoiceId, CreateInvoiceRequest request) {
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                log.info("[Invoice] Updating invoice | invoiceId={} tenantId={}", invoiceId, tenantId);
 
-                Timesheet timesheet = timesheetRepository
-                                .findByIdAndTenant(event.getTimesheetId(), event.getTenantId())
-                                .orElseThrow(() -> new TimesheetNotFoundException(
-                                                "Timesheet not found: " + event.getTimesheetId()));
-                log.info("Timesheet {}", timesheet);
-                Invoice invoice = createInvoiceFromTimesheet(timesheet);
+                Invoice invoice = resolveInvoice(invoiceId, tenantId);
+
+                if (invoice.getStatus() != InvoiceStatus.DRAFT) {
+                        throw new IllegalInvoiceStateException(
+                                        "Only DRAFT invoices can be updated. Current status: " + invoice.getStatus());
+                }
+
+                Client client = resolveClient(request.getClientId(), tenantId);
+                populateClientSnapshot(invoice, client);
+                invoice.setIssueDate(request.getIssueDate());
+                invoice.setDueDate(request.getDueDate());
+
+                invoice.getInvoiceLines().clear();
+                applyInvoiceLines(invoice, invoice.getTenant(), request.getLines());
                 calculateInvoiceTotals(invoice);
 
+                Tenant tenant = invoice.getTenant(); // capture before transaction closes
                 Invoice savedInvoice = invoiceRepository.save(invoice);
+                log.info("[Invoice] Invoice updated | invoiceId={}", savedInvoice.getInvoiceId());
 
-                try {
-                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
-                        attachPdfToInvoice(savedInvoice, pdfBytes);
-
-                        sendBackgroundUploadTask(savedInvoice, pdfBytes);
-                        sendInvoiceGeneratedNotification(savedInvoice, timesheet);
-                } catch (Exception e) {
-                        log.error("[Billing] Failed to generate/upload PDF for Invoice ID: {}",
-                                        savedInvoice.getInvoiceId(), e);
-                }
-        }
-
-        private Invoice createInvoiceFromTimesheet(Timesheet timesheet) {
-                String invoiceRef = "INV-" + timesheet.getYear() + "-" + String.format("%02d", timesheet.getMonth())
-                                + "-" + timesheet.getTimesheetId().substring(0, 5);
-
-                Invoice invoice = new Invoice();
-                invoice.setTenant(timesheet.getTenant());
-                invoice.setInvoiceNumber(invoiceRef);
-                invoice.setTimesheet(timesheet);
-                invoice.setIssueDate(LocalDate.now());
-                invoice.setStatus(InvoiceStatus.DRAFT);
-
-                YearMonth ym = YearMonth.of(timesheet.getYear(), timesheet.getMonth());
-                invoice.setDueDate(ym.atEndOfMonth().plusDays(30));
-
-                Client client = timesheet.getMission().getClient();
-                invoice.setClient(client);
-                if (client != null) {
-                        invoice.setClientNameAtBilling(client.getFullName());
-                        invoice.setClientAddressAtBilling(
-                                        client.getAddress() != null ? client.getAddress() : "Address not provided");
-                        invoice.setVatNumberAtBilling(client.getVatNumber() != null ? client.getVatNumber() : "N/A");
-                } else {
-                        invoice.setClientNameAtBilling("Unknown Client");
-                }
-
-                BigDecimal defaultTjm = BigDecimal.valueOf(500.00);
-                for (TimesheetEntry entry : timesheet.getEntries()) {
-                        if (entry.getQuantity() > 0) {
-                                InvoiceLine line = new InvoiceLine();
-                                line.setTenant(timesheet.getTenant());
-                                line.setInvoice(invoice);
-                                line.setDescription("Consulting (" + entry.getDate() + ") - "
-                                                + timesheet.getMission().getTitle());
-                                line.setQuantity(BigDecimal.valueOf(entry.getQuantity()));
-                                line.setUnitPrice(defaultTjm);
-                                line.setTotalLineAmount(line.getQuantity().multiply(line.getUnitPrice()));
-
-                                invoice.getInvoiceLines().add(line);
+                // PDF regeneration runs after commit for the same reason as createInvoice —
+                // transaction stays short, invoice is committed before any I/O begins.
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                                generateAndDispatchPdf(savedInvoice, tenant, null);
                         }
-                }
-                return invoice;
-        }
+                });
 
-        private void calculateInvoiceTotals(Invoice invoice) {
-                BigDecimal subTotal = invoice.getInvoiceLines().stream()
-                                .map(InvoiceLine::getTotalLineAmount)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                invoice.setSubTotal(subTotal);
-                BigDecimal vatRate = BigDecimal.valueOf(0.20);
-                BigDecimal vatAmount = subTotal.multiply(vatRate).setScale(2, RoundingMode.HALF_UP);
-                invoice.setVatAmount(vatAmount);
-                invoice.setTotalAmount(subTotal.add(vatAmount));
-        }
-
-        private void attachPdfToInvoice(Invoice invoice, byte[] pdfBytes) {
-                UploadFile uploadFile = uploadService.uploadInternalFile(
-                                pdfBytes,
-                                invoice.getInvoiceNumber() + ".pdf",
-                                FileType.INVOICE,
-                                "application/pdf",
-                                invoice.getTenant(),
-                                invoice.getCreatedBy());
-
-                invoice.setInvoiceFile(uploadFile);
-                invoice.setPdfS3Key(uploadFile.getS3Key());
-                invoiceRepository.save(invoice);
-        }
-
-        private void sendBackgroundUploadTask(Invoice invoice, byte[] pdfBytes) {
-                rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
-                                new FileUploadMessage(invoice.getInvoiceFile().getFileId(), pdfBytes));
-        }
-
-        private void sendInvoiceGeneratedNotification(Invoice invoice, Timesheet timesheet) {
-                log.info("[Billing] Sending InvoiceGeneratedNotification for Invoice ID: {}", invoice.getInvoiceId());
-                if (timesheet.getMission().getAccountManager() != null
-                                && timesheet.getMission().getAccountManager().getUser() != null) {
-                        NotificationMessage msg = NotificationMessage.builder()
-                                        .userId(timesheet.getCreatedBy().getUserId())
-                                        .notificationType(NotificationType.INVOICE_GENERATED)
-                                        .title(NotificationType.INVOICE_GENERATED.getDefaultTitle())
-                                        .message("An invoice for the mission '" + timesheet.getMission().getTitle()
-                                                        + "' was successfully generated.")
-                                        .entityType(EntityType.INVOICE)
-                                        .entityId(invoice.getInvoiceId())
-                                        .actorId(timesheet.getValidatedBy().getUser().getUserId())
-                                        .actorName(timesheet.getValidatedBy().getUser().getFullName())
-                                        .build();
-
-                        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
-                                        "notification.invoice.generated", msg);
-                }
+                return billingMapper.toDto(savedInvoice, invoice.getPayments());
         }
 
         @Override
+        @Transactional(readOnly = true)
         public Page<InvoiceDto> getAllInvoices(Pageable pageable) {
                 String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-                log.info("[Billing] Fetching paginated invoices for tenant: {}", tenantId);
+                log.debug("[Invoice] Fetching paginated invoices | tenantId={} page={} size={}",
+                                tenantId, pageable.getPageNumber(), pageable.getPageSize());
+
                 return invoiceRepository.findAllByTenantTenantId(tenantId, pageable)
                                 .map(inv -> {
                                         List<Payment> payments = paymentRepository
@@ -278,12 +168,15 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
 
         @Override
+        @Transactional(readOnly = true)
         public InvoiceDto getInvoiceById(String invoiceId) {
                 String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-                log.info("[Billing] Fetching invoice detail: {} for tenant: {}", invoiceId, tenantId);
-                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
-                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
-                List<Payment> payments = paymentRepository.findByInvoiceInvoiceIdAndTenantTenantId(invoiceId, tenantId);
+                log.debug("[Invoice] Fetching invoice | invoiceId={} tenantId={}", invoiceId, tenantId);
+
+                Invoice invoice = resolveInvoice(invoiceId, tenantId);
+                List<Payment> payments = paymentRepository
+                                .findByInvoiceInvoiceIdAndTenantTenantId(invoiceId, tenantId);
+
                 return billingMapper.toDto(invoice, payments);
         }
 
@@ -291,11 +184,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         @Transactional
         public void recordPayment(String invoiceId, PaymentRequest request) {
                 String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-                log.info("[Billing] Recording payment of {} for invoice: {} (Tenant: {})",
-                                request.getAmount(), invoiceId, tenantId);
+                log.info("[Invoice] Recording payment | invoiceId={} amount={} tenantId={}",
+                                invoiceId, request.getAmount(), tenantId);
 
-                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
-                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
+                Invoice invoice = resolveInvoice(invoiceId, tenantId);
 
                 Payment payment = new Payment();
                 payment.setInvoice(invoice);
@@ -304,20 +196,20 @@ public class InvoiceServiceImpl implements InvoiceService {
                 payment.setTransactionReference(request.getTransactionReference());
                 payment.setMethod(request.getMethod());
                 payment.setTenant(invoice.getTenant());
-
                 paymentRepository.save(payment);
 
-                // Update invoice status if fully paid
-                List<Payment> payments = paymentRepository.findByInvoiceInvoiceIdAndTenantTenantId(invoiceId, tenantId);
-                BigDecimal totalPaid = payments.stream()
+                List<Payment> allPayments = paymentRepository
+                                .findByInvoiceInvoiceIdAndTenantTenantId(invoiceId, tenantId);
+
+                BigDecimal totalPaid = allPayments.stream()
                                 .map(Payment::getAmount)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                log.debug("[Billing] Total paid for invoice {}: {} / {}", invoiceId, totalPaid,
-                                invoice.getTotalAmount());
+                log.debug("[Invoice] Payment totals | invoiceId={} paid={} total={}",
+                                invoiceId, totalPaid, invoice.getTotalAmount());
 
                 if (totalPaid.compareTo(invoice.getTotalAmount()) >= 0) {
-                        log.info("[Billing] Invoice {} is now fully paid. Updating status to PAID.", invoiceId);
+                        log.info("[Invoice] Invoice fully paid, updating status | invoiceId={}", invoiceId);
                         invoice.setStatus(InvoiceStatus.PAID);
                         invoiceRepository.save(invoice);
                 }
@@ -327,118 +219,359 @@ public class InvoiceServiceImpl implements InvoiceService {
         @Transactional
         public void updateStatus(String invoiceId, InvoiceStatus status) {
                 String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-                log.info("[Billing] Updating status of invoice {} to {} (Tenant: {})", invoiceId, status, tenantId);
-                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
-                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
+                log.info("[Invoice] Updating status | invoiceId={} newStatus={} tenantId={}", invoiceId, status,
+                                tenantId);
+
+                Invoice invoice = resolveInvoice(invoiceId, tenantId);
                 invoice.setStatus(status);
                 invoiceRepository.save(invoice);
         }
 
         @Override
         @Transactional
-        public InvoiceDto updateInvoice(String invoiceId, CreateInvoiceRequest request) {
+        public void deleteInvoice(String invoiceId) {
                 String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-                log.info("[Billing] Updating invoice {} for tenant: {}", invoiceId, tenantId);
+                log.info("[Invoice] Deleting invoice | invoiceId={} tenantId={}", invoiceId, tenantId);
 
-                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
-                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
+                Invoice invoice = resolveInvoice(invoiceId, tenantId);
 
-                if (invoice.getStatus() != InvoiceStatus.DRAFT) {
-                        throw new IllegalStateException("Only DRAFT invoices can be updated.");
+                if (invoice.getStatus() == InvoiceStatus.PAID) {
+                        throw new IllegalInvoiceStateException("Cannot delete a PAID invoice.");
                 }
 
-                Client client = clientRepository.findByClientIdAndTenantTenantId(request.getClientId(), tenantId)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Client not found: " + request.getClientId()));
+                invoiceRepository.delete(invoice);
+                log.info("[Invoice] Invoice deleted | invoiceId={}", invoiceId);
+        }
 
+        @Override
+        @Transactional(readOnly = true)
+        public String getDownloadUrl(String invoiceId) {
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                log.debug("[Invoice] Generating download URL | invoiceId={} tenantId={}", invoiceId, tenantId);
+
+                Invoice invoice = resolveInvoice(invoiceId, tenantId);
+
+                if (invoice.getInvoiceFile() == null) {
+                        log.warn("[Invoice] No PDF file attached to invoice | invoiceId={}", invoiceId);
+                        throw new InvoiceFileNotFoundException("No PDF available for invoice: " + invoiceId);
+                }
+
+                String url = uploadService.resolveUrl(invoice.getInvoiceFile());
+                log.debug("[Invoice] Download URL resolved | invoiceId={}", invoiceId);
+                return url;
+        }
+
+        // -------------------------------------------------------------------------
+        // RabbitMQ — Timesheet Approved Event Handler
+        // -------------------------------------------------------------------------
+
+        @RabbitListener(queues = RabbitMQConfig.BILLING_QUEUE)
+        @Override
+        public void handleTimesheetApproved(TimesheetApprovedEvent event) {
+                log.info("[Billing] Received TimesheetApprovedEvent | timesheetId={} tenantId={}",
+                                event.getTimesheetId(), event.getTenantId());
+
+                // Idempotency guard — safe against RabbitMQ message redelivery
+                if (invoiceRepository.existsByTimesheetTimesheetId(event.getTimesheetId())) {
+                        log.warn("[Billing] Duplicate event detected, invoice already exists | timesheetId={}",
+                                        event.getTimesheetId());
+                        return;
+                }
+
+                Timesheet timesheet = timesheetRepository
+                                .findByIdAndTenant(event.getTimesheetId(), event.getTenantId())
+                                .orElseThrow(() -> new TimesheetNotFoundException(
+                                                "Timesheet not found: " + event.getTimesheetId()));
+
+                log.info("[Billing] Timesheet resolved | timesheetId={} status={}",
+                                timesheet.getTimesheetId(), timesheet.getStatus());
+
+                // Step 1: Persist invoice — short, focused transaction
+                Invoice savedInvoice = createAndSaveInvoice(timesheet);
+                log.info("[Billing] Invoice persisted | invoiceId={}", savedInvoice.getInvoiceId());
+
+                // Step 2: Generate PDF — I/O outside any transaction
+                byte[] pdfBytes;
+                try {
+                        pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
+                        log.info("[Billing] PDF generated | invoiceId={} sizeBytes={}", savedInvoice.getInvoiceId(),
+                                        pdfBytes.length);
+                } catch (Exception e) {
+                        log.error("[Billing] PDF generation failed | invoiceId={}", savedInvoice.getInvoiceId(), e);
+                        markAsPdfPending(savedInvoice.getInvoiceId());
+                        // Invoice is persisted safely — a retry scheduler can regenerate the PDF later
+                        // Do NOT notify the user: invoice is incomplete at this point
+                        return;
+                }
+
+                // Step 3: Attach PDF metadata — another short, focused transaction
+                Invoice invoiceWithPdf;
+                try {
+                        invoiceWithPdf = attachPdfToInvoice(savedInvoice, pdfBytes, timesheet.getTenant());
+                        log.info("[Billing] PDF metadata attached | invoiceId={}", invoiceWithPdf.getInvoiceId());
+                } catch (Exception e) {
+                        log.error("[Billing] Failed to attach PDF to invoice | invoiceId={}",
+                                        savedInvoice.getInvoiceId(), e);
+                        markAsPdfPending(savedInvoice.getInvoiceId());
+                        return;
+                }
+
+                // Step 4: Dispatch async S3 upload — fire and forget
+                dispatchUploadTask(invoiceWithPdf, pdfBytes);
+
+                // Step 5: Notify only after full success
+                sendInvoiceGeneratedNotification(invoiceWithPdf, timesheet);
+        }
+
+        @Transactional
+        public Invoice createAndSaveInvoice(Timesheet timesheet) {
+                Invoice invoice = buildInvoiceFromTimesheet(timesheet);
+                calculateInvoiceTotals(invoice);
+                return invoiceRepository.save(invoice);
+        }
+
+        @Transactional
+        public Invoice attachPdfToInvoice(Invoice invoice, byte[] pdfBytes, Tenant tenant) {
+                UploadFile uploadFile = uploadService.uploadInternalFile(
+                                pdfBytes,
+                                invoice.getInvoiceNumber() + ".pdf",
+                                FileType.INVOICE,
+                                "application/pdf",
+                                tenant,
+                                invoice.getCreatedBy());
+
+                invoice.setInvoiceFile(uploadFile);
+                invoice.setPdfS3Key(uploadFile.getS3Key());
+                return invoiceRepository.save(invoice);
+        }
+
+        @Transactional
+        public void markAsPdfPending(String invoiceId) {
+                invoiceRepository.findById(invoiceId).ifPresentOrElse(
+                                invoice -> {
+                                        invoice.setStatus(InvoiceStatus.PDF_PENDING);
+                                        invoiceRepository.save(invoice);
+                                        log.warn("[Invoice] Marked as PDF_PENDING | invoiceId={}", invoiceId);
+                                },
+                                () -> log.error("[Invoice] Cannot mark PDF_PENDING — invoice not found | invoiceId={}",
+                                                invoiceId));
+        }
+
+        private Invoice buildManualInvoice(CreateInvoiceRequest request, Tenant tenant, Client client) {
+                String invoiceNumber = String.format("INV-M-%s-%s",
+                                LocalDate.now().toString().replace("-", ""),
+                                UUID.randomUUID().toString().substring(0, 5).toUpperCase());
+
+                Invoice invoice = new Invoice();
+                invoice.setTenant(tenant);
+                invoice.setInvoiceNumber(invoiceNumber);
                 invoice.setClient(client);
-                invoice.setClientNameAtBilling(client.getFullName());
-                invoice.setClientAddressAtBilling(client.getAddress() != null ? client.getAddress() : "N/A");
-                invoice.setVatNumberAtBilling(client.getVatNumber() != null ? client.getVatNumber() : "N/A");
                 invoice.setIssueDate(request.getIssueDate());
                 invoice.setDueDate(request.getDueDate());
+                invoice.setStatus(InvoiceStatus.DRAFT);
+                populateClientSnapshot(invoice, client);
+                return invoice;
+        }
 
-                // Update lines
-                invoice.getInvoiceLines().clear();
-                BigDecimal subTotal = BigDecimal.ZERO;
-                for (CreateInvoiceLineRequest lineReq : request.getLines()) {
+        private Invoice buildInvoiceFromTimesheet(Timesheet timesheet) {
+                String invoiceNumber = String.format("INV-%d-%02d-%s",
+                                timesheet.getYear(),
+                                timesheet.getMonth(),
+                                timesheet.getTimesheetId().substring(0, 5));
+
+                Invoice invoice = new Invoice();
+                invoice.setTenant(timesheet.getTenant());
+                invoice.setInvoiceNumber(invoiceNumber);
+                invoice.setTimesheet(timesheet);
+                invoice.setIssueDate(LocalDate.now());
+                invoice.setStatus(InvoiceStatus.DRAFT);
+
+                YearMonth ym = YearMonth.of(timesheet.getYear(), timesheet.getMonth());
+                invoice.setDueDate(ym.atEndOfMonth().plusDays(30));
+
+                Client client = timesheet.getMission().getClient();
+                invoice.setClient(client);
+                populateClientSnapshot(invoice, client);
+                populateTimesheetLines(invoice, timesheet);
+
+                return invoice;
+        }
+
+        private void populateClientSnapshot(Invoice invoice, Client client) {
+                if (client != null) {
+                        invoice.setClientNameAtBilling(client.getFullName());
+                        invoice.setClientAddressAtBilling(
+                                        StringUtils.hasText(client.getAddress()) ? client.getAddress()
+                                                        : "Address not provided");
+                        invoice.setVatNumberAtBilling(
+                                        StringUtils.hasText(client.getVatNumber()) ? client.getVatNumber() : "N/A");
+                } else {
+                        log.warn("[Invoice] No client found — using fallback snapshot values");
+                        invoice.setClientNameAtBilling("Unknown Client");
+                        invoice.setClientAddressAtBilling("N/A");
+                        invoice.setVatNumberAtBilling("N/A");
+                }
+        }
+
+        private void applyInvoiceLines(Invoice invoice, Tenant tenant, List<CreateInvoiceLineRequest> lineRequests) {
+                lineRequests.forEach(lineReq -> {
                         InvoiceLine line = new InvoiceLine();
-                        line.setTenant(invoice.getTenant());
+                        line.setTenant(tenant);
                         line.setInvoice(invoice);
                         line.setDescription(lineReq.getDescription());
                         line.setQuantity(lineReq.getQuantity());
                         line.setUnitPrice(lineReq.getUnitPrice());
-
-                        BigDecimal lineTotal = line.getQuantity().multiply(line.getUnitPrice());
-                        line.setTotalLineAmount(lineTotal);
-
+                        line.setTotalLineAmount(line.getQuantity().multiply(line.getUnitPrice()));
                         invoice.getInvoiceLines().add(line);
-                        subTotal = subTotal.add(lineTotal);
-                }
+                });
+        }
+
+        private void populateTimesheetLines(Invoice invoice, Timesheet timesheet) {
+                // TODO: Daily rate should be sourced from Mission or Contract terms, not
+                // hardcoded.
+                // Hardcoding a rate is a business risk — billing the wrong amount silently.
+                BigDecimal dailyRate = BigDecimal.valueOf(500.00); // Using hardcoded fallback until Mission/Contract
+                                                                   // integration
+
+                timesheet.getEntries().stream()
+                                .filter(entry -> entry.getQuantity() > 0)
+                                .forEach(entry -> {
+                                        InvoiceLine line = new InvoiceLine();
+                                        line.setTenant(timesheet.getTenant());
+                                        line.setInvoice(invoice);
+                                        line.setDescription(String.format("Consulting (%s) - %s",
+                                                        entry.getDate(), timesheet.getMission().getTitle()));
+                                        line.setQuantity(BigDecimal.valueOf(entry.getQuantity()));
+                                        line.setUnitPrice(dailyRate);
+                                        line.setTotalLineAmount(line.getQuantity().multiply(line.getUnitPrice()));
+                                        invoice.getInvoiceLines().add(line);
+                                });
+        }
+
+        private void calculateInvoiceTotals(Invoice invoice) {
+                BigDecimal subTotal = invoice.getInvoiceLines().stream()
+                                .map(InvoiceLine::getTotalLineAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                // TODO: VAT rate should be country/client/tenant-specific, not a global
+                // constant.
+                BigDecimal vatRate = BigDecimal.valueOf(0.20);
+                BigDecimal vatAmount = subTotal.multiply(vatRate).setScale(2, RoundingMode.HALF_UP);
 
                 invoice.setSubTotal(subTotal);
-                BigDecimal vatRate = BigDecimal.valueOf(0.20); // Default 20%
-                BigDecimal vatAmount = subTotal.multiply(vatRate).setScale(2, RoundingMode.HALF_UP);
                 invoice.setVatAmount(vatAmount);
                 invoice.setTotalAmount(subTotal.add(vatAmount));
+        }
 
-                Invoice savedInvoice = invoiceRepository.save(invoice);
+        // -------------------------------------------------------------------------
+        // Internal — PDF & Notification Dispatch
+        // -------------------------------------------------------------------------
 
-                // Regenerate PDF
+        /**
+         * Generates a PDF and dispatches the S3 upload task.
+         * Called from transactional methods (createInvoice, updateInvoice) after the
+         * transaction commits. PDF failure is logged but does not roll back the
+         * invoice.
+         */
+        private void generateAndDispatchPdf(Invoice invoice, Tenant tenant, User createdBy) {
                 try {
-                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(savedInvoice);
+                        byte[] pdfBytes = pdfGeneratorService.generateInvoicePdf(invoice);
+                        log.info("[Invoice] PDF generated | invoiceId={} sizeBytes={}", invoice.getInvoiceId(),
+                                        pdfBytes.length);
+
                         UploadFile uploadFile = uploadService.uploadInternalFile(
                                         pdfBytes,
-                                        savedInvoice.getInvoiceNumber() + ".pdf",
+                                        invoice.getInvoiceNumber() + ".pdf",
                                         FileType.INVOICE,
                                         "application/pdf",
-                                        invoice.getTenant(),
-                                        null);
+                                        tenant,
+                                        createdBy);
 
-                        savedInvoice.setInvoiceFile(uploadFile);
-                        savedInvoice.setPdfS3Key(uploadFile.getS3Key());
-                        invoiceRepository.save(savedInvoice);
+                        invoice.setInvoiceFile(uploadFile);
+                        invoice.setPdfS3Key(uploadFile.getS3Key());
+                        invoiceRepository.save(invoice);
 
-                        // Fire an event to upload the pdf to the cloud storage in background
+                        log.info("[Invoice] PDF metadata saved | invoiceId={} fileId={}",
+                                        invoice.getInvoiceId(), uploadFile.getFileId());
+
                         rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
                                         new FileUploadMessage(uploadFile.getFileId(), pdfBytes));
+
                 } catch (Exception e) {
-                        log.error("[Billing] Failed to regenerate PDF for updated Invoice: {}",
-                                        savedInvoice.getInvoiceNumber(), e);
+                        log.error("[Invoice] PDF generation/upload failed | invoiceId={} — invoice is saved, PDF pending retry",
+                                        invoice.getInvoiceId(), e);
+                        markAsPdfPending(invoice.getInvoiceId());
                 }
-
-                return billingMapper.toDto(savedInvoice, invoice.getPayments());
         }
 
-        @Override
-        @Transactional
-        public void deleteInvoice(String invoiceId) {
-                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-                log.info("[Billing] Deleting invoice {} for tenant: {}", invoiceId, tenantId);
-
-                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
-                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
-
-                if (invoice.getStatus() == InvoiceStatus.PAID) {
-                        throw new IllegalStateException("Cannot delete a PAID invoice.");
+        private void dispatchUploadTask(Invoice invoice, byte[] pdfBytes) {
+                if (invoice.getInvoiceFile() == null) {
+                        log.error("[Billing] Cannot dispatch upload — no file reference on invoice | invoiceId={}",
+                                        invoice.getInvoiceId());
+                        return;
                 }
-
-                invoiceRepository.delete(invoice);
+                log.info("[Billing] Dispatching async S3 upload | invoiceId={} fileId={}",
+                                invoice.getInvoiceId(), invoice.getInvoiceFile().getFileId());
+                rabbitTemplate.convertAndSend(RabbitMQConfig.UPLOAD_QUEUE,
+                                new FileUploadMessage(invoice.getInvoiceFile().getFileId(), pdfBytes));
         }
 
-        @Override
-        public String getDownloadUrl(String invoiceId) {
-                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-                log.info("[Billing] Generating download URL for invoice: {} (Tenant: {})", invoiceId, tenantId);
-                Invoice invoice = invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
-                                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found: " + invoiceId));
+        private void sendInvoiceGeneratedNotification(Invoice invoice, Timesheet timesheet) {
+                Employee validatedBy = timesheet.getValidatedBy();
+                Employee accountManager = timesheet.getMission().getAccountManager();
 
-                if (invoice.getInvoiceFile() != null) {
-                        String url = uploadService.resolveUrl(invoice.getInvoiceFile());
-                        log.debug("[Billing] Download URL generated: {}", url);
-                        return url;
+                if (accountManager == null || accountManager.getUser() == null) {
+                        log.warn("[Billing] Skipping notification — no account manager on mission | invoiceId={}",
+                                        invoice.getInvoiceId());
+                        return;
                 }
-                log.warn("[Billing] No file found for invoice: {}", invoiceId);
-                return null;
+
+                if (validatedBy == null || validatedBy.getUser() == null) {
+                        log.warn("[Billing] Skipping notification — timesheet has no validator | invoiceId={}",
+                                        invoice.getInvoiceId());
+                        return;
+                }
+
+                NotificationMessage msg = NotificationMessage.builder()
+                                .userId(timesheet.getCreatedBy().getUserId())
+                                .notificationType(NotificationType.INVOICE_GENERATED)
+                                .title(NotificationType.INVOICE_GENERATED.getDefaultTitle())
+                                .message(String.format("An invoice for the mission '%s' was successfully generated.",
+                                                timesheet.getMission().getTitle()))
+                                .entityType(EntityType.INVOICE)
+                                .entityId(invoice.getInvoiceId())
+                                .actorId(validatedBy.getUser().getUserId())
+                                .actorName(validatedBy.getUser().getFullName())
+                                .build();
+
+                log.info("[Billing] Publishing INVOICE_GENERATED notification | invoiceId={} recipientUserId={}",
+                                invoice.getInvoiceId(), msg.getUserId());
+
+                rabbitTemplate.convertAndSend(
+                                RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                                "notification.invoice.generated",
+                                msg);
+        }
+
+        // -------------------------------------------------------------------------
+        // Internal — Helpers
+        // -------------------------------------------------------------------------
+
+        private Invoice resolveInvoice(String invoiceId, String tenantId) {
+                return invoiceRepository.findByInvoiceIdAndTenantTenantId(invoiceId, tenantId)
+                                .orElseThrow(() -> {
+                                        log.warn("[Invoice] Invoice not found | invoiceId={} tenantId={}", invoiceId,
+                                                        tenantId);
+                                        return new InvoiceNotFoundException("Invoice not found: " + invoiceId);
+                                });
+        }
+
+        private Client resolveClient(String clientId, String tenantId) {
+                return clientRepository.findByClientIdAndTenantTenantId(clientId, tenantId)
+                                .orElseThrow(() -> {
+                                        log.warn("[Invoice] Client not found | clientId={} tenantId={}", clientId,
+                                                        tenantId);
+                                        return new ClientNotFoundException("Client not found: " + clientId);
+                                });
         }
 }

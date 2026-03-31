@@ -34,26 +34,27 @@ public class UploadConsumer {
         String fileId = message.getFileId();
         byte[] content = message.getContent();
 
-        log.info("[UploadQueue] Received upload task for fileId: {}", fileId);
+        log.info("[Upload #7] Received upload task for fileId: {} | size={} bytes", fileId,
+                (content != null ? content.length : 0));
 
         if (fileId == null) {
-            log.warn("[UploadQueue] Received null fileId");
+            log.warn("[Upload #7.1] Received null fileId");
             return;
         }
 
         UploadFile file = uploadFileRepository.findById(fileId).orElse(null);
         if (file == null) {
-            log.warn("[UploadQueue] File not found: {}", fileId);
+            log.warn("[Upload #7.2] File not found in DB: {}", fileId);
             return;
         }
 
         if (file.getStatus() == FileStatus.AVAILABLE) {
-            log.info("[UploadQueue] File already available: {}", fileId);
+            log.info("[Upload #7.3] File already available in S3: {}", fileId);
             return;
         }
 
         try {
-            log.info("[UploadQueue] Uploading to S3 | key: {}", file.getS3Key());
+            log.info("[Upload #8] Uploading to S3 | key: {} | bucket: {}", file.getS3Key(), bucketName);
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
@@ -67,9 +68,9 @@ public class UploadConsumer {
             file.setStatus(FileStatus.AVAILABLE);
             uploadFileRepository.save(file);
 
-            log.info("[UploadQueue] Successfully uploaded file: {} to S3", fileId);
+            log.info("[Upload #8.1] Successfully uploaded file: {} to S3", fileId);
         } catch (Exception e) {
-            log.error("[UploadQueue] Failed to upload file: {} to S3", fileId, e);
+            log.error("[Upload] Failed to upload file: {} to S3", fileId, e);
             throw new RuntimeException("S3 upload failed for file: " + fileId, e);
         }
     }
