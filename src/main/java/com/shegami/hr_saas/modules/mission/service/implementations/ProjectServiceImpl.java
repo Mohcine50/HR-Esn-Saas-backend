@@ -8,14 +8,16 @@ import com.shegami.hr_saas.modules.mission.dto.ProjectDto;
 import com.shegami.hr_saas.modules.mission.dto.UpdateProjectRequest;
 import com.shegami.hr_saas.modules.mission.entity.Consultant;
 import com.shegami.hr_saas.modules.mission.entity.Project;
+import com.shegami.hr_saas.modules.mission.entity.Client;
 import com.shegami.hr_saas.modules.mission.enums.ProjectStatus;
+import com.shegami.hr_saas.modules.mission.exceptions.ClientNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
 import com.shegami.hr_saas.modules.mission.mapper.ProjectMapper;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.ProjectRepository;
+import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
 import com.shegami.hr_saas.modules.mission.service.ProjectService;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,16 +25,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
 
-    private final ProjectRepository    projectRepository;
-    private final ProjectMapper        projectMapper;
-    private final TenantService        tenantService;
+    private final ProjectRepository projectRepository;
+    private final ProjectMapper projectMapper;
+    private final TenantService tenantService;
     private final ConsultantRepository consultantRepository;
+    private final ClientRepository clientRepository;
 
     @Override
     @Transactional
@@ -42,6 +44,12 @@ public class ProjectServiceImpl implements ProjectService {
 
         Tenant tenant = tenantService.getTenant(tenantId);
 
+        Client client = clientRepository.findByClientIdAndTenantTenantId(request.getClientId(), tenantId)
+                .orElseThrow(() -> {
+                    log.info("Client '{}' not found during project creation", request.getClientId());
+                    return new ClientNotFoundException("Client not found: " + request.getClientId());
+                });
+
         Project project = new Project();
         project.setName(request.getName());
         project.setDescription(request.getDescription());
@@ -49,6 +57,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setTags(request.getTags());
         project.setProjectStatus(ProjectStatus.IN_PROGRESS);
         project.setTenant(tenant);
+        project.setClient(client);
 
         Project saved = projectRepository.save(project);
         log.info("Project created successfully with id '{}' for tenant '{}'", saved.getProjectId(), tenantId);
@@ -161,7 +170,6 @@ public class ProjectServiceImpl implements ProjectService {
 
         log.info("Project '{}' deleted successfully", projectId);
     }
-
 
     private Project findByIdAndTenant(String projectId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();

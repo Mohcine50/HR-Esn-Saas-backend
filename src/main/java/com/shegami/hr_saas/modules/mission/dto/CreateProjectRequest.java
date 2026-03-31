@@ -18,5 +18,8 @@ public class CreateProjectRequest {
     @NotNull(message = "Priority is required")
     private Priority priority;
 
+    @NotNull(message = "Client is required")
+    private String clientId;
+
     private Set<String> tags;
 }
