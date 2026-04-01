@@ -5,6 +5,7 @@ import com.shegami.hr_saas.modules.billing.dto.PaymentRequest;
 import com.shegami.hr_saas.modules.billing.dto.UpdateInvoiceStatusRequest;
 import com.shegami.hr_saas.modules.billing.dto.CreateInvoiceRequest;
 import com.shegami.hr_saas.modules.billing.service.InvoiceService;
+import com.shegami.hr_saas.modules.billing.enums.InvoiceStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -67,5 +68,18 @@ public class BillingController {
     public ResponseEntity<Map<String, String>> getDownloadUrl(@PathVariable String id) {
         String url = invoiceService.getDownloadUrl(id);
         return ResponseEntity.ok(Map.of("url", url != null ? url : ""));
+    }
+
+    @GetMapping("/consultants/paid-invoices")
+    public ResponseEntity<Page<InvoiceDto>> getInvoicesByConsultant(
+            Pageable pageable) {
+        return ResponseEntity.ok(invoiceService.getPaidInvoicesByConsultant(pageable));
+    }
+
+    @GetMapping("/consultants/invoices")
+    public ResponseEntity<Page<InvoiceDto>> getConsultantInvoices(
+            @RequestParam(required = false) InvoiceStatus status,
+            Pageable pageable) {
+        return ResponseEntity.ok(invoiceService.getInvoicesByConsultant(status, pageable));
     }
 }

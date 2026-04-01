@@ -1,6 +1,7 @@
 package com.shegami.hr_saas.modules.billing.repository;
 
 import com.shegami.hr_saas.modules.billing.entity.Invoice;
+import com.shegami.hr_saas.modules.billing.enums.InvoiceStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +16,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
     Optional<Invoice> findByInvoiceIdAndTenantTenantId(String invoiceId, String tenantId);
 
     Page<Invoice> findAllByTenantTenantId(String tenantId, Pageable pageable);
+
+    Page<Invoice> findAllByTimesheetConsultantConsultantIdAndTenantTenantId(String consultantId, String tenantId,
+            Pageable pageable);
+
+    Page<Invoice> findAllByTimesheetConsultantConsultantIdAndStatusAndTenantTenantId(String consultantId,
+            InvoiceStatus status, String tenantId, Pageable pageable);
 
     boolean existsByTimesheetTimesheetId(String timesheetId);
 }

@@ -32,4 +32,8 @@ public interface InvoiceService {
     void updateStatus(String invoiceId, InvoiceStatus status);
 
     String getDownloadUrl(String invoiceId);
+
+    Page<InvoiceDto> getPaidInvoicesByConsultant(Pageable pageable);
+
+    Page<InvoiceDto> getInvoicesByConsultant(InvoiceStatus status, Pageable pageable);
 }

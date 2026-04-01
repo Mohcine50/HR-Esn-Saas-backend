@@ -258,6 +258,49 @@ public class InvoiceServiceImpl implements InvoiceService {
                 return url;
         }
 
+        @Override
+        @Transactional(readOnly = true)
+        public Page<InvoiceDto> getPaidInvoicesByConsultant(Pageable pageable) {
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                String consultantId = UserContextHolder.getCurrentUserContext().userId();
+                log.info("[Invoice] Fetching paid invoices for consultant | consultantId={} tenantId={}",
+                                consultantId, tenantId);
+
+                return invoiceRepository.findAllByTimesheetConsultantConsultantIdAndStatusAndTenantTenantId(
+                                consultantId, InvoiceStatus.PAID, tenantId, pageable)
+                                .map(inv -> {
+                                        List<Payment> payments = paymentRepository
+                                                        .findByInvoiceInvoiceIdAndTenantTenantId(inv.getInvoiceId(),
+                                                                        tenantId);
+                                        return billingMapper.toDto(inv, payments);
+                                });
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public Page<InvoiceDto> getInvoicesByConsultant(InvoiceStatus status, Pageable pageable) {
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+                String consultantId = UserContextHolder.getCurrentUserContext().userId();
+                log.info("[Invoice] Fetching invoices for consultant | consultantId={} status={} tenantId={}",
+                                consultantId, status, tenantId);
+
+                Page<Invoice> invoices;
+                if (status != null) {
+                        invoices = invoiceRepository.findAllByTimesheetConsultantConsultantIdAndStatusAndTenantTenantId(
+                                        consultantId, status, tenantId, pageable);
+                } else {
+                        invoices = invoiceRepository.findAllByTimesheetConsultantConsultantIdAndTenantTenantId(
+                                        consultantId, tenantId, pageable);
+                }
+
+                return invoices.map(inv -> {
+                        List<Payment> payments = paymentRepository
+                                        .findByInvoiceInvoiceIdAndTenantTenantId(inv.getInvoiceId(),
+                                                        tenantId);
+                        return billingMapper.toDto(inv, payments);
+                });
+        }
+
         // -------------------------------------------------------------------------
         // RabbitMQ — Timesheet Approved Event Handler
         // -------------------------------------------------------------------------
