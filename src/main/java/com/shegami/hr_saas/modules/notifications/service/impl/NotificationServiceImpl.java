@@ -88,11 +88,11 @@ public class NotificationServiceImpl implements NotificationService {
         if (type == null || id == null)
             return null;
         return switch (type) {
-            case MISSION -> "/dashboard/missions/" + id;
-            case TIMESHEET -> "/dashboard/timesheets/" + id;
-            case PROJECT -> "/dashboard/projects/" + id;
-            case INVOICE -> "/dashboard/billing/invoices/" + id;
-            case USER -> "/dashboard/users/" + id;
+            case MISSION -> "/missions/" + id;
+            case TIMESHEET -> "/timesheets/" + id;
+            case PROJECT -> "/projects/" + id;
+            case INVOICE -> "/billing?invoiceId=" + id;
+            case USER -> "/users/" + id;
             default -> null;
         };
     }
