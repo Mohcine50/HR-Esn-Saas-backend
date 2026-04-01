@@ -6,10 +6,13 @@ import com.shegami.hr_saas.modules.notifications.dto.NotificationDto;
 import com.shegami.hr_saas.modules.notifications.entity.Notification;
 import org.mapstruct.*;
 
-@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = {TenantMapper.class, UserMapper.class, UserMapper.class})
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = {
+        TenantMapper.class, UserMapper.class, UserMapper.class })
 public interface NotificationMapper {
     Notification toEntity(NotificationDto notificationDto);
 
+    @Mapping(target = "icon", expression = "java(notification.getNotificationType().getIcon())")
+    @Mapping(target = "color", expression = "java(notification.getNotificationType().getColor())")
     NotificationDto toDto(Notification notification);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

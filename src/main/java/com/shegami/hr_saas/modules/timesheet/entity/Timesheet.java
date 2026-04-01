@@ -40,9 +40,13 @@ public class Timesheet extends BaseTenantEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Employee validatedBy;
 
+    @Column(name = "rejection_comment")
+    private String rejectionComment;
+
     @Id
     @Column(name = "timesheet_id", nullable = false)
     private String timesheetId;
+
     @PrePersist
     public void generateTimesheetId() {
         if (this.timesheetId == null) {

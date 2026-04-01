@@ -37,4 +37,6 @@ public class NotificationDto implements Serializable {
     LocalDateTime emailSentAt;
     Map<String, Object> metadata;
     String actionUrl;
+    String icon;
+    String color;
 }

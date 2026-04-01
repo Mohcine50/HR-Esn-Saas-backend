@@ -39,36 +39,62 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void processNotification(NotificationMessage message) {
-        log.info("[Notification] Processing new message for user {}", message.getUserId());
+        if (message.getUserId() == null) {
+            log.error("[Notification] Rejected: No userId specified in message: {}", message);
+            return;
+        }
+
+        log.info("[Notification] Processing {} for user {}", message.getNotificationType(), message.getUserId());
 
         User user = userRepository.findById(message.getUserId())
-                .orElseThrow(() -> new UserNotFoundException("Recipient not found: " + message.getUserId()));
+                .orElseThrow(() -> {
+                    log.error("[Notification] Fail: Recipient user {} not found", message.getUserId());
+                    return new UserNotFoundException("Recipient not found: " + message.getUserId());
+                });
 
-        Notification notification = new Notification();
-        notification.setRecipient(user);
+        Notification notification = Notification.builder()
+                .recipient(user)
+                .notificationType(message.getNotificationType())
+                .title(message.getTitle() != null ? message.getTitle()
+                        : message.getNotificationType().getDefaultTitle())
+                .message(message.getMessage())
+                .entityType(message.getEntityType())
+                .entityId(message.getEntityId())
+                .actorName(message.getActorName())
+                .metadata(message.getMetadata())
+                .status(NotificationStatus.UNREAD)
+                .sentInApp(true)
+                .actionUrl(generateActionUrl(message.getEntityType(), message.getEntityId()))
+                .build();
         notification.setTenant(user.getTenant());
-        notification.setNotificationType(message.getNotificationType());
-        notification.setTitle(message.getTitle());
-        notification.setMessage(message.getMessage());
-
-        if (message.getEntityType() != null) {
-            notification.setEntityType(message.getEntityType());
-        }
-        notification.setEntityId(message.getEntityId());
 
         if (message.getActorId() != null) {
-            userRepository.findById(message.getActorId()).ifPresent(notification::setActor);
+            userRepository.findById(message.getActorId()).ifPresent(actor -> {
+                notification.setActor(actor);
+                if (notification.getActorName() == null) {
+                    notification.setActorName(actor.getFullName());
+                }
+            });
         }
-        notification.setActorName(message.getActorName());
-        notification.setMetadata(message.getMetadata());
-        notification.setStatus(NotificationStatus.UNREAD);
-        notification.setSentInApp(true);
 
         Notification saved = notificationRepository.save(notification);
         NotificationDto dto = notificationMapper.toDto(saved);
 
         // Send realtime notification if user is currently connected
         sendToClient(message.getUserId(), dto);
+    }
+
+    private String generateActionUrl(EntityType type, String id) {
+        if (type == null || id == null)
+            return null;
+        return switch (type) {
+            case MISSION -> "/dashboard/missions/" + id;
+            case TIMESHEET -> "/dashboard/timesheets/" + id;
+            case PROJECT -> "/dashboard/projects/" + id;
+            case INVOICE -> "/dashboard/billing/invoices/" + id;
+            case USER -> "/dashboard/users/" + id;
+            default -> null;
+        };
     }
 
     private void sendToClient(String userId, NotificationDto dto) {

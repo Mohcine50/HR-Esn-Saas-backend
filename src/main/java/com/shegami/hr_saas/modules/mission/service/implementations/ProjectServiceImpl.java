@@ -24,6 +24,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
+import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
+import com.shegami.hr_saas.modules.notifications.enums.EntityType;
+import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -35,6 +41,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final TenantService tenantService;
     private final ConsultantRepository consultantRepository;
     private final ClientRepository clientRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
@@ -124,10 +131,35 @@ public class ProjectServiceImpl implements ProjectService {
         log.info("Changing status of project '{}' to '{}'", projectId, status);
 
         Project project = findByIdAndTenant(projectId);
+        ProjectStatus fromStatus = project.getProjectStatus();
         project.setProjectStatus(status);
         projectRepository.save(project);
 
         log.info("Project '{}' status changed to '{}' successfully", projectId, status);
+
+        // Notify project participants or managers
+        // For now, we notify the current user just as a demonstration, or we could
+        // notify the client owner
+        // Typically status changes are notified to those following the project
+        if (project.getClient() != null && project.getClient().getTenant() != null) {
+            NotificationMessage msg = NotificationMessage.builder()
+                    .userId(UserContextHolder.getCurrentUserContext().userId()) // Notify the actor for now
+                    .notificationType(NotificationType.PROJECT_STATUS_CHANGED)
+                    .title(NotificationType.PROJECT_STATUS_CHANGED.getDefaultTitle())
+                    .message(String.format("Project '%s' status changed from %s to %s",
+                            project.getName(), fromStatus, status))
+                    .entityType(EntityType.PROJECT)
+                    .entityId(projectId)
+                    .metadata(Map.of(
+                            "projectId", projectId,
+                            "projectName", project.getName(),
+                            "fromStatus", fromStatus.name(),
+                            "toStatus", status.name()))
+                    .build();
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                    "notification.project.status_changed", msg);
+        }
     }
 
     @Override
@@ -146,6 +178,23 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.save(project);
 
         log.info("Consultant '{}' assigned to project '{}' successfully", consultantId, projectId);
+
+        NotificationMessage msg = NotificationMessage.builder()
+                .userId(consultant.getUser().getUserId())
+                .notificationType(NotificationType.PROJECT_CONSULTANT_ASSIGNED)
+                .title(NotificationType.PROJECT_CONSULTANT_ASSIGNED.getDefaultTitle())
+                .message(String.format("You have been assigned to project '%s'", project.getName()))
+                .entityType(EntityType.PROJECT)
+                .entityId(projectId)
+                .actorId(UserContextHolder.getCurrentUserContext().userId())
+                .metadata(Map.of(
+                        "projectId", projectId,
+                        "projectName", project.getName(),
+                        "priority", project.getPriority().name()))
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                "notification.project.assigned", msg);
     }
 
     @Override

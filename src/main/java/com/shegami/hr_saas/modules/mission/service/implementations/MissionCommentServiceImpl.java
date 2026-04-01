@@ -24,6 +24,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
+import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
+import com.shegami.hr_saas.modules.notifications.enums.EntityType;
+import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import java.util.List;
 
@@ -36,13 +45,13 @@ public class MissionCommentServiceImpl implements MissionCommentService {
     private final MissionActivityService activityService;
     private final MissionCommentMapper missionCommentMapper;
     private final UserRepository userRepository;
-
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     @Override
     public MissionCommentResponse addComment(String missionId, CommentRequest req) {
-        String tenantId  = UserContextHolder.getCurrentUserContext().tenantId();
-        String userId    = UserContextHolder.getCurrentUserContext().userId();
+        String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
+        String userId = UserContextHolder.getCurrentUserContext().userId();
 
         log.info("[Comment] Adding comment | missionId={} authorId={}", missionId, userId);
 
@@ -69,15 +78,62 @@ public class MissionCommentServiceImpl implements MissionCommentService {
         activityService.log(mission, ActivityType.COMMENT_ADDED,
                 "added a comment", userId, author.getFirstName() + " " + author.getLastName());
 
+        // Notify participants
+        notifyParticipants(mission, saved, userId, author.getFirstName() + " " + author.getLastName());
+
         log.info("[Comment] Comment added | commentId={} missionId={}", saved.getCommentId(), missionId);
         return missionCommentMapper.toResponse(saved);
+    }
+
+    private void notifyParticipants(Mission mission, MissionComment comment, String actorId, String actorName) {
+        Set<String> recipientIds = new HashSet<>();
+
+        // Add consultants
+        if (mission.getConsultants() != null) {
+            recipientIds.addAll(mission.getConsultants().stream()
+                    .map(c -> c.getUser().getUserId())
+                    .collect(Collectors.toSet()));
+        }
+
+        // Add Account Manager
+        if (mission.getAccountManager() != null && mission.getAccountManager().getUser() != null) {
+            recipientIds.add(mission.getAccountManager().getUser().getUserId());
+        }
+
+        // Remove the actor themselves
+        recipientIds.remove(actorId);
+
+        String preview = comment.getContent().length() > 80
+                ? comment.getContent().substring(0, 77) + "..."
+                : comment.getContent();
+
+        recipientIds.forEach(recipientId -> {
+            NotificationMessage msg = NotificationMessage.builder()
+                    .userId(recipientId)
+                    .notificationType(NotificationType.MISSION_COMMENT_ADDED)
+                    .title(NotificationType.MISSION_COMMENT_ADDED.getDefaultTitle())
+                    .message(String.format("%s commented on mission '%s'", actorName, mission.getTitle()))
+                    .entityType(EntityType.MISSION)
+                    .entityId(mission.getMissionId())
+                    .actorId(actorId)
+                    .actorName(actorName)
+                    .metadata(Map.of(
+                            "missionTitle", mission.getTitle(),
+                            "missionId", mission.getMissionId(),
+                            "commentId", comment.getCommentId(),
+                            "commentPreview", preview))
+                    .build();
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                    "notification.mission.comment_added", msg);
+        });
     }
 
     @Transactional
     @Override
     public MissionCommentResponse editComment(String commentId, CommentRequest req) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        String userId   = UserContextHolder.getCurrentUserContext().userId();
+        String userId = UserContextHolder.getCurrentUserContext().userId();
 
         log.info("[Comment] Editing comment | commentId={} editorId={}", commentId, userId);
 
@@ -103,7 +159,7 @@ public class MissionCommentServiceImpl implements MissionCommentService {
     @Override
     public void deleteComment(String commentId) {
         String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
-        String userId   = UserContextHolder.getCurrentUserContext().userId();
+        String userId = UserContextHolder.getCurrentUserContext().userId();
 
         log.info("[Comment] Deleting comment | commentId={} deletorId={}", commentId, userId);
 
@@ -132,7 +188,5 @@ public class MissionCommentServiceImpl implements MissionCommentService {
                 .map(missionCommentMapper::toResponse)
                 .toList();
     }
-
-
 
 }

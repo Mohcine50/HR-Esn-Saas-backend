@@ -6,7 +6,6 @@ import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
-import com.shegami.hr_saas.modules.mission.dto.ClientDto;
 import com.shegami.hr_saas.modules.mission.dto.MissionDto;
 import com.shegami.hr_saas.modules.mission.dto.NewMissionRequest;
 import com.shegami.hr_saas.modules.mission.entity.Client;
@@ -18,11 +17,7 @@ import com.shegami.hr_saas.modules.mission.enums.MissionStatus;
 import com.shegami.hr_saas.modules.mission.exceptions.ConsultantNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.MissionNotFoundException;
 import com.shegami.hr_saas.modules.mission.exceptions.ProjectNotFoundException;
-import com.shegami.hr_saas.modules.mission.mapper.ClientMapper;
-import com.shegami.hr_saas.modules.mission.mapper.ConsultantMapper;
 import com.shegami.hr_saas.modules.mission.mapper.MissionMapper;
-import com.shegami.hr_saas.modules.mission.mapper.ProjectMapper;
-import com.shegami.hr_saas.modules.mission.repository.ClientRepository;
 import com.shegami.hr_saas.modules.mission.repository.ConsultantRepository;
 import com.shegami.hr_saas.modules.mission.repository.MissionRepository;
 import com.shegami.hr_saas.modules.mission.repository.ProjectRepository;
@@ -39,15 +34,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -60,14 +52,10 @@ public class MissionServiceImpl implements MissionService {
         private final TenantService tenantService;
         private final UserRepository userRepository;
         private final ClientService clientService;
-        private final ClientMapper clientMapper;
-        private final ProjectService projectService;
-        private final ProjectMapper projectMapper;
         private final ConsultantService consultantService;
         private final UploadService uploadService;
         private final LabelsService labelsService;
         private final ProjectRepository projectRepository;
-
         private final MissionActivityService activityService;
         private final RabbitTemplate rabbitTemplate;
 
@@ -161,11 +149,16 @@ public class MissionServiceImpl implements MissionService {
                 consultants.forEach(project::addConsultant);
                 Project savedProject = projectRepository.save(project);
 
-                Client client = clientService.getClientByIdForMission(dto.getClient());
+                Client resolvedClient = clientService.getClientByIdForMission(dto.getClient());
+                if (resolvedClient == null && project.getClient() != null) {
+                        resolvedClient = project.getClient();
+                }
+                final Client finalClient = resolvedClient;
+
                 var labels = labelsService.getAllLabels(dto.getLabels());
 
                 Mission mission = Mission.builder()
-                                .client(client)
+                                .client(finalClient)
                                 .status(dto.getStatus())
                                 .title(dto.getTitle())
                                 .description(dto.getDescription())
@@ -208,13 +201,25 @@ public class MissionServiceImpl implements MissionService {
 
                         NotificationMessage msg = NotificationMessage.builder()
                                         .userId(c.getUser().getUserId())
-                                        .notificationType(NotificationType.MISSION_ASSIGNED)
-                                        .title(NotificationType.MISSION_ASSIGNED.getDefaultTitle())
+                                        .notificationType(NotificationType.CONSULTANT_ASSIGNED)
+                                        .title(NotificationType.CONSULTANT_ASSIGNED.getDefaultTitle())
                                         .message("You have been assigned to the mission: " + saved.getTitle())
                                         .entityType(EntityType.MISSION)
                                         .entityId(saved.getMissionId())
                                         .actorId(actorId)
                                         .actorName(actorName)
+                                        .metadata(Map.of(
+                                                        "missionTitle", saved.getTitle(),
+                                                        "missionId", saved.getMissionId(),
+                                                        "clientName",
+                                                        finalClient != null ? finalClient.getFullName() : "N/A",
+                                                        "startDate",
+                                                        saved.getStartDate() != null ? saved.getStartDate().toString()
+                                                                        : "N/A",
+                                                        "endDate",
+                                                        saved.getEndDate() != null ? saved.getEndDate().toString()
+                                                                        : "N/A",
+                                                        "priority", saved.getPriority().name()))
                                         .build();
                         rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
                                         "notification.mission.assigned",
@@ -261,13 +266,19 @@ public class MissionServiceImpl implements MissionService {
                 if (dto.getStatus() != null && !dto.getStatus().equals(existing.getStatus())) {
                         log.info("[Mission] Status change | missionId={} from={} to={} actorId={}",
                                         existing.getMissionId(), existing.getStatus(), dto.getStatus(), actorId);
+
+                        MissionStatus oldStatus = existing.getStatus();
+                        MissionStatus newStatus = dto.getStatus();
+
                         activityService.log(
                                         existing,
                                         ActivityType.STATUS_CHANGED,
                                         "status",
-                                        existing.getStatus().name(),
-                                        dto.getStatus().name(),
+                                        oldStatus.name(),
+                                        newStatus.name(),
                                         actorId, actorName);
+
+                        sendMissionStatusChangedNotification(existing, oldStatus, newStatus, actorId, actorName);
                 }
 
                 if (dto.getPriority() != null && !dto.getPriority().equals(existing.getPriority())) {
@@ -367,13 +378,24 @@ public class MissionServiceImpl implements MissionService {
 
                 NotificationMessage msg = NotificationMessage.builder()
                                 .userId(consultant.getUser().getUserId())
-                                .notificationType(NotificationType.MISSION_ASSIGNED)
-                                .title(NotificationType.MISSION_ASSIGNED.getDefaultTitle())
+                                .notificationType(NotificationType.CONSULTANT_ASSIGNED)
+                                .title(NotificationType.CONSULTANT_ASSIGNED.getDefaultTitle())
                                 .message("You have been assigned to the mission: " + mission.getTitle())
                                 .entityType(EntityType.MISSION)
                                 .entityId(missionId)
                                 .actorId(actorId)
                                 .actorName(actorName)
+                                .metadata(Map.of(
+                                                "missionTitle", mission.getTitle(),
+                                                "missionId", mission.getMissionId(),
+                                                "clientName",
+                                                mission.getClient() != null ? mission.getClient().getFullName() : "N/A",
+                                                "startDate",
+                                                mission.getStartDate() != null ? mission.getStartDate().toString()
+                                                                : "N/A",
+                                                "endDate",
+                                                mission.getEndDate() != null ? mission.getEndDate().toString() : "N/A",
+                                                "priority", mission.getPriority().name()))
                                 .build();
                 rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE, "notification.mission.assigned",
                                 msg);
@@ -475,5 +497,55 @@ public class MissionServiceImpl implements MissionService {
                 return "%s → %s".formatted(
                                 start != null ? start.toString() : "?",
                                 end != null ? end.toString() : "?");
+        }
+
+        private void sendMissionStatusChangedNotification(Mission mission, MissionStatus from, MissionStatus to,
+                        String actorId, String actorName) {
+                // Notify consultants
+                mission.getConsultants().forEach(c -> {
+                        NotificationMessage msg = NotificationMessage.builder()
+                                        .userId(c.getUser().getUserId())
+                                        .notificationType(NotificationType.MISSION_STATUS_CHANGED)
+                                        .message(String.format("Mission '%s' status changed to %s", mission.getTitle(),
+                                                        to))
+                                        .entityType(EntityType.MISSION)
+                                        .entityId(mission.getMissionId())
+                                        .actorId(actorId)
+                                        .actorName(actorName)
+                                        .metadata(Map.of(
+                                                        "missionTitle", mission.getTitle(),
+                                                        "missionId", mission.getMissionId(),
+                                                        "fromStatus", from.name(),
+                                                        "toStatus", to.name(),
+                                                        "clientName", mission.getClient().getFullName()))
+                                        .build();
+
+                        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                                        "notification.mission.status_changed", msg);
+                });
+
+                // Notify account manager if not the actor
+                if (mission.getAccountManager() != null && mission.getAccountManager().getUser() != null
+                                && !mission.getAccountManager().getUser().getUserId().equals(actorId)) {
+                        NotificationMessage msg = NotificationMessage.builder()
+                                        .userId(mission.getAccountManager().getUser().getUserId())
+                                        .notificationType(NotificationType.MISSION_STATUS_CHANGED)
+                                        .message(String.format("Mission '%s' status changed to %s", mission.getTitle(),
+                                                        to))
+                                        .entityType(EntityType.MISSION)
+                                        .entityId(mission.getMissionId())
+                                        .actorId(actorId)
+                                        .actorName(actorName)
+                                        .metadata(Map.of(
+                                                        "missionTitle", mission.getTitle(),
+                                                        "missionId", mission.getMissionId(),
+                                                        "fromStatus", from.name(),
+                                                        "toStatus", to.name(),
+                                                        "clientName", mission.getClient().getFullName()))
+                                        .build();
+
+                        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                                        "notification.mission.status_changed", msg);
+                }
         }
 }

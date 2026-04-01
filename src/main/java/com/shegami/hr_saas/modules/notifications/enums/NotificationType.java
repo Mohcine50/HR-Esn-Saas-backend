@@ -6,48 +6,36 @@ import lombok.Getter;
 public enum NotificationType {
 
     // ==================== MISSION NOTIFICATIONS ====================
-    MISSION_ASSIGNED("Mission Assigned", "You've been assigned to a mission"),
-    MISSION_UPDATED("Mission Updated", "A mission you're working on was updated"),
-    MISSION_COMPLETED("Mission Completed", "A mission has been completed"),
-    MISSION_COMMENTED("New Comment", "Someone commented on a mission"),
+    CONSULTANT_ASSIGNED("Mission Assigned", "You've been assigned to a mission"),
+    MISSION_STATUS_CHANGED("Mission Status Updated", "A mission status has changed"),
+    CONSULTANT_REMOVED_FROM_MISSION("Removed from Mission", "You've been removed from a mission"),
+    MISSION_DEADLINE_APPROACHING("Deadline Approaching", "A mission deadline is approaching"),
 
     // ==================== TIMESHEET NOTIFICATIONS ====================
-    TIMESHEET_SUBMITTED("Timesheet Submitted", "Your timesheet has been submitted"),
+    TIMESHEET_SUBMITTED("Timesheet Submitted", "New timesheet submitted for approval"),
     TIMESHEET_APPROVED("Timesheet Approved", "Your timesheet has been approved"),
     TIMESHEET_REJECTED("Timesheet Rejected", "Your timesheet has been rejected"),
-    TIMESHEET_REMINDER("Timesheet Reminder", "Don't forget to submit your timesheet"),
-
-    // ==================== MENTION NOTIFICATIONS ====================
-    MENTION("Mentioned", "You were mentioned in a comment"),
 
     // ==================== COMMENT NOTIFICATIONS ====================
-    COMMENT_ADDED("New Comment", "Someone commented"),
-    COMMENT_REPLY("Comment Reply", "Someone replied to your comment"),
+    MISSION_COMMENT_ADDED("New Comment on Mission", "A new comment was added to a mission"),
+    MISSION_COMMENT_MENTION("Mentioned on Mission", "You were mentioned in a mission comment"),
+
+    // ==================== INVOICE & BILLING NOTIFICATIONS ====================
+    INVOICE_GENERATED("Invoice Generated", "A new invoice has been generated"),
+    INVOICE_OVERDUE("Invoice Overdue", "An invoice is overdue for payment"),
+    PAYMENT_RECORDED("Payment Recorded", "A payment has been recorded for an invoice"),
 
     // ==================== PROJECT NOTIFICATIONS ====================
-    PROJECT_ASSIGNED("Project Assigned", "You've been assigned to a project"),
-    PROJECT_UPDATED("Project Updated", "A project you're on was updated"),
-    PROJECT_DEADLINE_APPROACHING("Project Deadline", "Project deadline is approaching"),
+    PROJECT_CONSULTANT_ASSIGNED("Project Assigned", "You've been assigned to a project"),
+    PROJECT_STATUS_CHANGED("Project Status Updated", "A project status has changed"),
 
-    // ==================== INVITATION NOTIFICATIONS ====================
-    INVITATION_RECEIVED("Invitation", "You've been invited to join"),
-    INVITATION_ACCEPTED("Invitation Accepted", "Your invitation was accepted"),
+    // ==================== INVITATION & HR NOTIFICATIONS ====================
+    INVITATION_SENT("Invitation Sent", "You've been invited to join the platform"),
+    EMPLOYEE_ONBOARDED("Employee Onboarded", "A new employee has completed onboarding"),
 
     // ==================== SYSTEM NOTIFICATIONS ====================
     SYSTEM_ANNOUNCEMENT("System Announcement", "Important system announcement"),
-    SYSTEM_MAINTENANCE("Maintenance", "Scheduled system maintenance"),
-    SYSTEM_UPDATE("System Update", "New features and updates available"),
-
-    // ==================== ACCOUNT NOTIFICATIONS ====================
-    ACCOUNT_UPDATED("Account Updated", "Your account has been updated"),
-    PASSWORD_CHANGED("Password Changed", "Your password was changed"),
-    EMAIL_CHANGED("Email Changed", "Your email address was changed"),
-
-    // ==================== INVOICE NOTIFICATIONS ====================
-    INVOICE_GENERATED("Invoice Generated", "An invoice has been generated"),
-    INVOICE_REMINDER("Invoice Reminder", "Don't forget to pay your invoice"),
-    INVOICE_PAID("Invoice Paid", "Your invoice has been paid"),
-    INVOICE_OVERDUE("Invoice Overdue", "Your invoice is overdue");
+    SYSTEM_UPDATE("System Update", "New features and updates available");
 
     private final String displayName;
     private final String defaultTitle;
@@ -59,12 +47,28 @@ public enum NotificationType {
 
     public String getColor() {
         return switch (this) {
-            case MISSION_ASSIGNED, PROJECT_ASSIGNED, INVOICE_GENERATED -> "#3B82F6"; // Blue
-            case MISSION_COMPLETED, TIMESHEET_APPROVED, INVOICE_PAID -> "#10B981"; // Green
-            case TIMESHEET_REMINDER, INVOICE_REMINDER -> "#F59E0B"; // Orange
-            case MENTION, COMMENT_REPLY -> "#8B5CF6"; // Purple
-            case INVOICE_OVERDUE -> "#EF4444"; // Red
+            case CONSULTANT_ASSIGNED, PROJECT_CONSULTANT_ASSIGNED -> "#3B82F6"; // Blue
+            case TIMESHEET_APPROVED, PAYMENT_RECORDED -> "#10B981"; // Green
+            case MISSION_COMMENT_MENTION -> "#8B5CF6"; // Purple
+            case TIMESHEET_REJECTED, INVOICE_OVERDUE, MISSION_DEADLINE_APPROACHING -> "#EF4444"; // Red
+            case INVOICE_GENERATED -> "#F59E0B"; // Amber
             default -> "#6B7280"; // Gray
+        };
+    }
+
+    public String getIcon() {
+        return switch (this) {
+            case CONSULTANT_ASSIGNED, PROJECT_CONSULTANT_ASSIGNED -> "user-plus";
+            case MISSION_STATUS_CHANGED, PROJECT_STATUS_CHANGED -> "refresh-cw";
+            case TIMESHEET_SUBMITTED -> "clock";
+            case TIMESHEET_APPROVED -> "check-circle";
+            case TIMESHEET_REJECTED -> "x-circle";
+            case MISSION_COMMENT_ADDED -> "message-square";
+            case MISSION_COMMENT_MENTION -> "at-sign";
+            case INVOICE_GENERATED -> "file-text";
+            case INVOICE_OVERDUE -> "alert-triangle";
+            case PAYMENT_RECORDED -> "credit-card";
+            default -> "bell";
         };
     }
 }

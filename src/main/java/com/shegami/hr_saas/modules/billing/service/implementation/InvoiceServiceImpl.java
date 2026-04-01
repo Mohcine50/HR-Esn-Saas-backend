@@ -56,6 +56,7 @@ import com.shegami.hr_saas.modules.billing.dto.CreateInvoiceLineRequest;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
 import com.shegami.hr_saas.modules.auth.entity.User;
 import java.util.Collections;
+import java.util.Map;
 
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -538,6 +539,14 @@ public class InvoiceServiceImpl implements InvoiceService {
                                 .entityId(invoice.getInvoiceId())
                                 .actorId(validatedBy.getUser().getUserId())
                                 .actorName(validatedBy.getUser().getFullName())
+                                .metadata(Map.of(
+                                                "invoiceId", invoice.getInvoiceId(),
+                                                "invoiceNumber", invoice.getInvoiceNumber(),
+                                                "clientName", invoice.getClientNameAtBilling(),
+                                                "amount", invoice.getTotalAmount(),
+                                                "currency", "MAD", // TODO: Source from tenant/client settings
+                                                "month", timesheet.getMonth(),
+                                                "year", timesheet.getYear()))
                                 .build();
 
                 log.info("[Billing] Publishing INVOICE_GENERATED notification | invoiceId={} recipientUserId={}",

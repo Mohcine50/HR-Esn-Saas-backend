@@ -14,6 +14,7 @@ import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@lombok.EqualsAndHashCode(callSuper = false)
 public class NotificationMessage extends BaseMessage {
     private String userId;
     private NotificationType notificationType;
@@ -23,5 +24,8 @@ public class NotificationMessage extends BaseMessage {
     private String entityId;
     private String actorId;
     private String actorName;
+    private String actionUrl;
+    private String icon;
+    private String color;
     private Map<String, Object> metadata;
 }
