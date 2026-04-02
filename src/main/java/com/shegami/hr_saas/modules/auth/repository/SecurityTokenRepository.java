@@ -9,4 +9,6 @@ public interface SecurityTokenRepository extends JpaRepository<SecurityToken, St
   Optional<SecurityToken> findByToken(String token);
 
   void deleteByToken(String token);
+
+  void deleteByUserUserId(String userId);
 }

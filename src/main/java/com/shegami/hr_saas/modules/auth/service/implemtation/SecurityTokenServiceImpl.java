@@ -1,6 +1,5 @@
 package com.shegami.hr_saas.modules.auth.service.implemtation;
 
-import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 import com.shegami.hr_saas.modules.auth.dto.SecurityTokenDto;
 import com.shegami.hr_saas.modules.auth.entity.SecurityToken;
 import com.shegami.hr_saas.modules.auth.entity.Tenant;
@@ -9,7 +8,6 @@ import com.shegami.hr_saas.modules.auth.enums.UserStatus;
 import com.shegami.hr_saas.modules.auth.exception.*;
 import com.shegami.hr_saas.modules.auth.mapper.SecurityTokenMapper;
 import com.shegami.hr_saas.modules.auth.repository.SecurityTokenRepository;
-import com.shegami.hr_saas.modules.auth.repository.TenantRepository;
 import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
@@ -46,8 +44,13 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
     }
 
     @Override
+    @Transactional
     public void createToken(SecurityTokenDto securityTokenDto) {
         log.info("createToken: {}", securityTokenDto.getToken());
+
+        // Delete existing tokens for this user first
+        this.deleteTokensByUser(securityTokenDto.getUserId());
+        securityTokenRepository.flush(); // Force sync with database to avoid unique constraint violations
 
         Tenant tenant = tenantService.getTenant(securityTokenDto.getTenantId());
 
@@ -109,5 +112,12 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
 
         log.info("User {} successfully verified", user.getEmail());
         return true;
+    }
+
+    @Override
+    @Transactional
+    public void deleteTokensByUser(String userId) {
+        log.info("Deleting all tokens for user: {}", userId);
+        securityTokenRepository.deleteByUserUserId(userId);
     }
 }

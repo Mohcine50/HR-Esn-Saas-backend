@@ -1,8 +1,6 @@
 package com.shegami.hr_saas.modules.notifications.rabbitmq.publisher;
 
 import com.shegami.hr_saas.config.domain.rabbitMq.RabbitMQConfig;
-import com.shegami.hr_saas.modules.auth.entity.SecurityToken;
-import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
 import com.shegami.hr_saas.modules.notifications.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +15,6 @@ import java.util.UUID;
 public class EventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
-    private final SecurityTokenService securityTokenService;
 
     public void publishNotification(NotificationMessage message) {
         try {
@@ -26,8 +23,7 @@ public class EventPublisher {
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.NOTIFICATION_EXCHANGE,
                     "notification.created",
-                    message
-            );
+                    message);
 
             log.info("Published notification message: {} to user: {}",
                     message.getNotificationType(), message.getUserId());
@@ -37,7 +33,6 @@ public class EventPublisher {
         }
     }
 
-
     public void publishInvitationEmail(EmailInvitationMessage message) {
         try {
             message.setMessageId(UUID.randomUUID().toString());
@@ -45,8 +40,7 @@ public class EventPublisher {
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.EMAIL_INVITATION_EXCHANGE,
                     "email.invitation.send",
-                    message
-            );
+                    message);
 
             log.info("Published invitation email message for: {}", message.getRecipientEmail());
         } catch (Exception e) {
@@ -62,8 +56,7 @@ public class EventPublisher {
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.EMAIL_VERIFICATION_EXCHANGE,
                     "email.verification.send",
-                    message
-            );
+                    message);
 
             log.info("Published verification email message for: {}", message.getRecipientEmail());
         } catch (Exception e) {
@@ -71,7 +64,6 @@ public class EventPublisher {
             throw new RuntimeException("Failed to publish verification email", e);
         }
     }
-
 
     public void publishCriticalEmail(EmailCriticalMessage message) {
         try {
@@ -85,8 +77,7 @@ public class EventPublisher {
                         messagePostProcessor.getMessageProperties()
                                 .setPriority(message.getPriority());
                         return messagePostProcessor;
-                    }
-            );
+                    });
 
             log.info("Published critical email message for: {} with priority: {}",
                     message.getRecipientEmail(), message.getPriority());
