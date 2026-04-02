@@ -12,4 +12,6 @@ public interface AuthService {
 
     void changePassword(ChangePasswordDto changePasswordDto);
 
+    void updateUserInfo(UpdateUserInfoDto updateUserInfoDto);
+
 }

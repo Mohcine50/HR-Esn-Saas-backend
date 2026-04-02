@@ -5,6 +5,7 @@ import com.shegami.hr_saas.modules.hr.dto.EmployeeDto;
 import com.shegami.hr_saas.modules.upload.entity.UploadFile;
 import lombok.Builder;
 import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -32,5 +33,10 @@ public class UserDto implements Serializable {
     boolean isPending;
     UserSettingsDto userSettings;
     String userId;
+
+    @JsonIgnore
     String password;
+
+    String jobTitle;
+    String bio;
 }

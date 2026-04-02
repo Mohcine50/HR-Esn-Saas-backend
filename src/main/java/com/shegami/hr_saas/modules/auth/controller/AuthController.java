@@ -49,12 +49,10 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Object> me(Authentication authentication) {
-
-        String userId = authentication.getName();
-
-        UserDto userInfo = authService.getCurrentUserInfo(userId);
+    public ResponseEntity<Object> me() {
+        String userId = UserContextHolder.getCurrentUserContext().userId();
         String accessToken = UserContextHolder.getCurrentUserContext().jwtToken();
+        UserDto userInfo = authService.getCurrentUserInfo(userId);
         return ResponseEntity.ok(Map.of("user", userInfo, "accessToken", accessToken));
     }
 
@@ -86,6 +84,12 @@ public class AuthController {
     @PostMapping("/change-password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordDto changePasswordDto) {
         authService.changePassword(changePasswordDto);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/profile")
+    public ResponseEntity<Void> updateUserInfo(@Valid @RequestBody UpdateUserInfoDto updateUserInfoDto) {
+        authService.updateUserInfo(updateUserInfoDto);
         return ResponseEntity.ok().build();
     }
 

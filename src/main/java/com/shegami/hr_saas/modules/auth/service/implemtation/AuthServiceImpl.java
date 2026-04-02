@@ -17,6 +17,8 @@ import com.shegami.hr_saas.modules.notifications.dto.EmailCriticalMessage;
 import com.shegami.hr_saas.modules.notifications.dto.EmailVerificationMessage;
 import com.shegami.hr_saas.modules.notifications.enums.VerificationType;
 import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
+import com.shegami.hr_saas.modules.hr.entity.Employee;
+import com.shegami.hr_saas.modules.hr.repository.EmployeeRepository;
 import com.shegami.hr_saas.shared.model.UserContext;
 import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.AllArgsConstructor;
@@ -53,6 +55,7 @@ public class AuthServiceImpl implements AuthService {
         private final UserMapper userMapper;
 
         private final EventPublisher eventPublisher;
+        private final EmployeeRepository employeeRepository;
 
         @Override
         public LoginResponseDto login(LoginDto loginDto) {
@@ -163,5 +166,29 @@ public class AuthServiceImpl implements AuthService {
                                 .criticalType("PASSWORD_CHANGED")
                                 .priority(1).context(Map.of("companyName", tenant.getName()))
                                 .build());
+        }
+
+        @Override
+        @Transactional
+        public void updateUserInfo(UpdateUserInfoDto updateUserInfoDto) {
+                String userId = UserContextHolder.getCurrentUserContext().userId();
+                log.info("Updating info for user id: {}", userId);
+
+                User user = userService.findUserByUserId(userId)
+                                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+                user.setFirstName(updateUserInfoDto.getFirstName());
+                user.setLastName(updateUserInfoDto.getLastName());
+                user.setEmail(updateUserInfoDto.getEmail());
+                user.setPhoneNumber(updateUserInfoDto.getPhoneNumber());
+
+                userService.updateUser(user);
+
+                if (user.getEmployee() != null) {
+                        Employee employee = user.getEmployee();
+                        employee.setBio(updateUserInfoDto.getBio());
+                        employee.setPosition(updateUserInfoDto.getJobTitle());
+                        employeeRepository.save(employee);
+                }
         }
 }
