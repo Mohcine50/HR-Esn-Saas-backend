@@ -10,4 +10,6 @@ public interface AuthService {
 
     UserDto getCurrentUserInfo(String userId);
 
+    void changePassword(ChangePasswordDto changePasswordDto);
+
 }

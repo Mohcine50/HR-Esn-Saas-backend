@@ -9,10 +9,10 @@ import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
+import com.shegami.hr_saas.modules.auth.exception.InvalidPasswordException;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
-import com.shegami.hr_saas.modules.hr.entity.Employee;
 import com.shegami.hr_saas.modules.notifications.dto.EmailVerificationMessage;
 import com.shegami.hr_saas.modules.notifications.enums.VerificationType;
 import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
@@ -21,10 +21,8 @@ import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -130,5 +128,27 @@ public class AuthServiceImpl implements AuthService {
                 User user = userService.findUserByUserId(userId)
                                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
                 return userMapper.toDto(user);
+        }
+
+        @Override
+        @Transactional
+        public void changePassword(ChangePasswordDto changePasswordDto) {
+                String userId = UserContextHolder.getCurrentUserContext().userId();
+                log.info("Changing password for user id: {}", userId);
+
+                User user = userService.findUserByUserId(userId)
+                                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+                if (!passwordEncoder.matches(changePasswordDto.getCurrentPassword(), user.getPassword())) {
+                        throw new InvalidPasswordException("Current password is incorrect");
+                }
+
+                if (!changePasswordDto.getNewPassword().equals(changePasswordDto.getConfirmPassword())) {
+                        throw new InvalidPasswordException("New password and confirm password do not match");
+                }
+
+                user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
+                userService.updateUser(user);
+                log.info("Password changed successfully for user id: {}", userId);
         }
 }

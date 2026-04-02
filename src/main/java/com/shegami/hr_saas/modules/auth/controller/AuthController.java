@@ -5,16 +5,15 @@ import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import com.shegami.hr_saas.config.domain.context.UserContextHolder;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.shegami.hr_saas.modules.auth.utils.AuthUtils.setAccessTokenCookie;
@@ -82,6 +81,12 @@ public class AuthController {
         return ResponseEntity.ok(Map.of(
                 "verified", valid,
                 "message", valid ? "VERIFIED" : "INVALID_OR_EXPIRED"));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordDto changePasswordDto) {
+        authService.changePassword(changePasswordDto);
+        return ResponseEntity.ok().build();
     }
 
 }
