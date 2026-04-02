@@ -93,4 +93,10 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification() {
+        authService.resendVerificationEmail();
+        return ResponseEntity.ok().build();
+    }
+
 }
