@@ -179,6 +179,15 @@ public class EventConsumer {
                             message.getContext());
                     break;
 
+                case "PASSWORD_CHANGED":
+                    String loginUrl = String.format("%s/login", URL);
+                    emailService.sendPasswordChangedEmail(
+                            message.getRecipientEmail(),
+                            message.getRecipientFirstName(),
+                            (String) message.getContext().get("companyName"),
+                            loginUrl);
+                    break;
+
                 default:
                     log.warn("Unknown critical email type: {}", message.getCriticalType());
             }

@@ -11,12 +11,17 @@ public interface EmailSenderService {
 
     void sendInvitationEmail(String to, String invitationLink) throws MessagingException;
 
-    void sendInvitationEmail(String recipientEmail, String recipientFirstName, String inviterName, String invitationToken, String role, String companyName, Map<String, Object> metadata);
+    void sendInvitationEmail(String recipientEmail, String recipientFirstName, String inviterName,
+            String invitationToken, String role, String companyName, Map<String, Object> metadata);
 
-    void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken, String companyName);
+    void sendEmailVerification(String recipientEmail, String recipientFirstName, String verificationToken,
+            String companyName);
 
     void sendPasswordResetEmail(String recipientEmail, String recipientFirstName, String verificationToken);
 
     void sendSecurityAlertEmail(String recipientEmail, String recipientFirstName, Map<String, Object> context);
+
+    void sendPasswordChangedEmail(String recipientEmail, String recipientFirstName, String companyName,
+            String loginUrl);
 
 }

@@ -13,6 +13,7 @@ import com.shegami.hr_saas.modules.auth.exception.InvalidPasswordException;
 import com.shegami.hr_saas.modules.auth.service.AuthService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.notifications.dto.EmailCriticalMessage;
 import com.shegami.hr_saas.modules.notifications.dto.EmailVerificationMessage;
 import com.shegami.hr_saas.modules.notifications.enums.VerificationType;
 import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
@@ -37,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @Service
@@ -134,10 +136,13 @@ public class AuthServiceImpl implements AuthService {
         @Transactional
         public void changePassword(ChangePasswordDto changePasswordDto) {
                 String userId = UserContextHolder.getCurrentUserContext().userId();
+                String tenantId = UserContextHolder.getCurrentUserContext().tenantId();
                 log.info("Changing password for user id: {}", userId);
 
                 User user = userService.findUserByUserId(userId)
                                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+                Tenant tenant = tenantService.getTenant(tenantId);
 
                 if (!passwordEncoder.matches(changePasswordDto.getCurrentPassword(), user.getPassword())) {
                         throw new InvalidPasswordException("Current password is incorrect");
@@ -150,5 +155,13 @@ public class AuthServiceImpl implements AuthService {
                 user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
                 userService.updateUser(user);
                 log.info("Password changed successfully for user id: {}", userId);
+
+                eventPublisher.publishCriticalEmail(EmailCriticalMessage.builder()
+                                .userId(user.getUserId())
+                                .recipientEmail(user.getEmail())
+                                .recipientFirstName(user.getFirstName())
+                                .criticalType("PASSWORD_CHANGED")
+                                .priority(1).context(Map.of("companyName", tenant.getName()))
+                                .build());
         }
 }
