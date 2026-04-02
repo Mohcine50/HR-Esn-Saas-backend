@@ -14,6 +14,10 @@ import com.shegami.hr_saas.modules.auth.repository.UserRepository;
 import com.shegami.hr_saas.modules.auth.service.SecurityTokenService;
 import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
+import com.shegami.hr_saas.modules.notifications.dto.EmailCriticalMessage;
+import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
+import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
+import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
 import com.shegami.hr_saas.shared.util.TokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,7 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
     private final TenantService tenantService;
     private final SecurityTokenMapper securityTokenMapper;
     private final UserRepository userRepository;
+    private final EventPublisher eventPublisher;
 
     @Override
     public void deleteToken(String token) {
@@ -45,7 +51,8 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
 
         Tenant tenant = tenantService.getTenant(securityTokenDto.getTenantId());
 
-        User user = userService.findUserByUserId(securityTokenDto.getUserId()).orElseThrow(()->new UserNotFoundException("User not found"));
+        User user = userService.findUserByUserId(securityTokenDto.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         SecurityToken securityToken = securityTokenMapper.toEntity(securityTokenDto);
 
@@ -81,6 +88,24 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
         userRepository.save(user);
 
         securityTokenRepository.delete(securityToken);
+
+        // Publish In-App Notification
+        eventPublisher.publishNotification(NotificationMessage.builder()
+                .userId(user.getUserId())
+                .title("Email Verified")
+                .message("Your email has been successfully verified. Welcome to the platform!")
+                .notificationType(NotificationType.SYSTEM_UPDATE)
+                .build());
+
+        // Publish Critical Email
+        eventPublisher.publishCriticalEmail(EmailCriticalMessage.builder()
+                .userId(user.getUserId())
+                .recipientEmail(user.getEmail())
+                .recipientFirstName(user.getFirstName())
+                .criticalType("EMAIL_VERIFIED")
+                .priority(1)
+                .context(Map.of("companyName", user.getTenant().getName()))
+                .build());
 
         log.info("User {} successfully verified", user.getEmail());
         return true;

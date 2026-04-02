@@ -188,6 +188,15 @@ public class EventConsumer {
                             loginUrl);
                     break;
 
+                case "EMAIL_VERIFIED":
+                    String verifiedLoginUrl = String.format("%s/login", URL);
+                    emailService.sendEmailVerifiedEmail(
+                            message.getRecipientEmail(),
+                            message.getRecipientFirstName(),
+                            (String) message.getContext().get("companyName"),
+                            verifiedLoginUrl);
+                    break;
+
                 default:
                     log.warn("Unknown critical email type: {}", message.getCriticalType());
             }

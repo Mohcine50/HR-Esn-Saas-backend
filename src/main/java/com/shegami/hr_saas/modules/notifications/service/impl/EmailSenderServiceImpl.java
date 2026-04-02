@@ -128,4 +128,26 @@ public class EmailSenderServiceImpl implements EmailSenderService {
 
         mailSender.send(message);
     }
+
+    @Override
+    @SneakyThrows
+    public void sendEmailVerifiedEmail(String recipientEmail, String recipientFirstName, String companyName,
+            String loginUrl) {
+        Context context = new Context();
+        context.setVariable("recipientFirstName", recipientFirstName);
+        context.setVariable("companyName", companyName);
+        context.setVariable("loginUrl", loginUrl);
+
+        String htmlContent = templateEngine.process("emails/email-verified", context);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom("no-reply@shegami-saas.com");
+        helper.setTo(recipientEmail);
+        helper.setSubject("Account Verified Successfully!");
+        helper.setText(htmlContent, true);
+
+        mailSender.send(message);
+    }
 }

@@ -24,4 +24,6 @@ public interface EmailSenderService {
     void sendPasswordChangedEmail(String recipientEmail, String recipientFirstName, String companyName,
             String loginUrl);
 
+    void sendEmailVerifiedEmail(String recipientEmail, String recipientFirstName, String companyName, String loginUrl);
+
 }
