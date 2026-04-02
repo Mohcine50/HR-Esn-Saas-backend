@@ -72,6 +72,11 @@ public class ApiExceptionHandler {
         return build(ErrorCode.USER_ALREADY_VERIFIED, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(UserAlreadyVerifiedException.class)
+    public ResponseEntity<ApiException> handleUserAlreadyVerifiedException(UserAlreadyVerifiedException ex) {
+        return build(ex.getMessage(), ErrorCode.USER_ALREADY_VERIFIED.getCode(), HttpStatus.BAD_REQUEST);
+    }
+
     // ── User ──────────────────────────────────────────────────────────────────
 
     @ExceptionHandler(UserNotFoundException.class)

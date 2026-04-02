@@ -14,4 +14,6 @@ public interface AuthService {
 
     void updateUserInfo(UpdateUserInfoDto updateUserInfoDto);
 
+    void resendVerificationEmail();
+
 }

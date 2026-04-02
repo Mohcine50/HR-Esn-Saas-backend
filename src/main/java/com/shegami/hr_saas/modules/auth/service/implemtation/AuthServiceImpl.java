@@ -7,6 +7,7 @@ import com.shegami.hr_saas.modules.auth.entity.User;
 import com.shegami.hr_saas.modules.auth.entity.UserRole;
 import com.shegami.hr_saas.modules.auth.enums.UserRoles;
 import com.shegami.hr_saas.modules.auth.exception.UserAlreadyExistException;
+import com.shegami.hr_saas.modules.auth.exception.UserAlreadyVerifiedException;
 import com.shegami.hr_saas.modules.auth.exception.UserNotFoundException;
 import com.shegami.hr_saas.modules.auth.mapper.UserMapper;
 import com.shegami.hr_saas.modules.auth.exception.InvalidPasswordException;
@@ -190,5 +191,26 @@ public class AuthServiceImpl implements AuthService {
                         employee.setPosition(updateUserInfoDto.getJobTitle());
                         employeeRepository.save(employee);
                 }
+        }
+
+        @Override
+        public void resendVerificationEmail() {
+                String userId = UserContextHolder.getCurrentUserContext().userId();
+                User user = userService.findUserByUserId(userId)
+                                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+                if (user.getIsEmailVerified()) {
+                        throw new UserAlreadyVerifiedException("Email is already verified");
+                }
+
+                eventPublisher.publishVerificationEmail(EmailVerificationMessage.builder()
+                                .recipientEmail(user.getEmail())
+                                .recipientFirstName(user.getFirstName())
+                                .verificationType(VerificationType.EMAIL_VERIFICATION)
+                                .userId(user.getUserId())
+                                .verificationToken(TokenGenerator.generateToken())
+                                .companyName(user.getTenant().getName())
+                                .tenantId(user.getTenant().getTenantId())
+                                .build());
         }
 }
