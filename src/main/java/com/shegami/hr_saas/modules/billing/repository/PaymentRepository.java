@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, String> {
     List<Payment> findByInvoiceInvoiceIdAndTenantTenantId(String invoiceId, String tenantId);
+
+    List<Payment> findTop10ByTenantTenantIdOrderByPaymentDateDesc(String tenantId);
 }
