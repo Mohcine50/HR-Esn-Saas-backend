@@ -92,7 +92,7 @@ public class NotificationServiceImpl implements NotificationService {
             case TIMESHEET -> "/timesheets/" + id;
             case PROJECT -> "/projects/" + id;
             case INVOICE -> "/billing?invoiceId=" + id;
-            case USER -> "/users/" + id;
+            case ACCOUNT -> "/users/" + id;
             default -> null;
         };
     }
