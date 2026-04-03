@@ -14,6 +14,7 @@ import com.shegami.hr_saas.modules.auth.service.TenantService;
 import com.shegami.hr_saas.modules.auth.service.UserService;
 import com.shegami.hr_saas.modules.notifications.dto.EmailCriticalMessage;
 import com.shegami.hr_saas.modules.notifications.dto.NotificationMessage;
+import com.shegami.hr_saas.modules.notifications.enums.EntityType;
 import com.shegami.hr_saas.modules.notifications.enums.NotificationType;
 import com.shegami.hr_saas.modules.notifications.rabbitmq.publisher.EventPublisher;
 import com.shegami.hr_saas.shared.util.TokenGenerator;
@@ -98,6 +99,8 @@ public class SecurityTokenServiceImpl implements SecurityTokenService {
                 .title("Email Verified")
                 .message("Your email has been successfully verified. Welcome to the platform!")
                 .notificationType(NotificationType.SYSTEM_UPDATE)
+                .entityType(EntityType.ACCOUNT)
+                .entityId(user.getUserId())
                 .build());
 
         // Publish Critical Email
