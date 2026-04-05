@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Value;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * DTO for {@link com.shegami.hr_saas.modules.hr.entity.Employee}
@@ -30,7 +31,7 @@ public class InvitationRequestDto implements Serializable {
     @NotEmpty
     @NotBlank
     String position;
-    Double salary;
+    BigDecimal salary;
     @NotNull
     @NotEmpty
     @NotBlank

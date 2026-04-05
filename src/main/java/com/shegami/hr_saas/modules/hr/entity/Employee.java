@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ public class Employee extends BaseTenantEntity {
 
     private LocalDateTime hireDate;
 
-    private Double salary;
+    private BigDecimal salary;
 
     private String currency;
 
