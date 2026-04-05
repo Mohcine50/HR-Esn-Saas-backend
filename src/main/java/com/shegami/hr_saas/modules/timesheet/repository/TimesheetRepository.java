@@ -15,76 +15,118 @@ import java.util.Optional;
 @Repository
 public interface TimesheetRepository extends JpaRepository<Timesheet, String> {
 
-        @Query("""
-                        SELECT COUNT(t) > 0
-                        FROM Timesheet t
-                        WHERE t.mission.missionId = :missionId
-                          AND t.consultant.consultantId = :consultantId
-                          AND t.month = :month
-                          AND t.year = :year
-                        """)
-        boolean existsByMissionAndConsultantAndPeriod(
-                        @Param("missionId") String missionId,
-                        @Param("consultantId") String consultantId,
-                        @Param("month") int month,
-                        @Param("year") int year);
+  @Query("""
+      SELECT COUNT(t) > 0
+      FROM Timesheet t
+      WHERE t.mission.missionId = :missionId
+        AND t.consultant.consultantId = :consultantId
+        AND t.month = :month
+        AND t.year = :year
+      """)
+  boolean existsByMissionAndConsultantAndPeriod(
+      @Param("missionId") String missionId,
+      @Param("consultantId") String consultantId,
+      @Param("month") int month,
+      @Param("year") int year);
 
-        @Query("""
-                        SELECT t
-                        FROM Timesheet t
-                        WHERE t.timesheetId = :timesheetId
-                          AND t.tenant.tenantId = :tenantId
-                        """)
-        Optional<Timesheet> findByIdAndTenant(
-                        @Param("timesheetId") String timesheetId,
-                        @Param("tenantId") String tenantId);
+  @Query("""
+      SELECT t
+      FROM Timesheet t
+      WHERE t.timesheetId = :timesheetId
+        AND t.tenant.tenantId = :tenantId
+      """)
+  Optional<Timesheet> findByIdAndTenant(
+      @Param("timesheetId") String timesheetId,
+      @Param("tenantId") String tenantId);
 
-        @Query("""
-                        SELECT t
-                        FROM Timesheet t
-                        WHERE t.consultant.consultantId = :consultantId
-                          AND t.tenant.tenantId = :tenantId
-                        ORDER BY t.year DESC, t.month DESC
-                        """)
-        List<Timesheet> findHistoryByConsultant(
-                        @Param("consultantId") String consultantId,
-                        @Param("tenantId") String tenantId);
+  @Query("""
+      SELECT t
+      FROM Timesheet t
+      WHERE t.consultant.consultantId = :consultantId
+        AND t.tenant.tenantId = :tenantId
+      ORDER BY t.year DESC, t.month DESC
+      """)
+  List<Timesheet> findHistoryByConsultant(
+      @Param("consultantId") String consultantId,
+      @Param("tenantId") String tenantId);
 
-        @Query("""
-                        SELECT t FROM Timesheet t
-                        JOIN t.mission m
-                        WHERE m.accountManager.employeeId = :managerId
-                          AND t.tenant.tenantId = :tenantId
-                          AND t.status = 'SUBMITTED'
-                        ORDER BY t.year DESC, t.month DESC
-                        """)
-        List<Timesheet> findSubmittedTimesheetsForManager(
-                        @Param("managerId") String managerId,
-                        @Param("tenantId") String tenantId);
+  @Query("""
+      SELECT t FROM Timesheet t
+      JOIN t.mission m
+      WHERE m.accountManager.employeeId = :managerId
+        AND t.tenant.tenantId = :tenantId
+        AND t.status = 'SUBMITTED'
+      ORDER BY t.year DESC, t.month DESC
+      """)
+  List<Timesheet> findSubmittedTimesheetsForManager(
+      @Param("managerId") String managerId,
+      @Param("tenantId") String tenantId);
 
-        @Query("""
-                        SELECT t FROM Timesheet t
-                        WHERE t.tenant.tenantId = :tenantId
-                          AND t.month = :month
-                          AND t.year = :year
-                          AND t.status = 'APPROVED'
-                        """)
-        List<Timesheet> findApprovedTimesheetsForMonth(
-                        @Param("tenantId") String tenantId,
-                        @Param("month") int month,
-                        @Param("year") int year);
+  @Query("""
+      SELECT t FROM Timesheet t
+      WHERE t.tenant.tenantId = :tenantId
+        AND t.month = :month
+        AND t.year = :year
+        AND t.status = 'APPROVED'
+      """)
+  List<Timesheet> findApprovedTimesheetsForMonth(
+      @Param("tenantId") String tenantId,
+      @Param("month") int month,
+      @Param("year") int year);
 
-        @Query("""
-                        SELECT t FROM Timesheet t
-                        JOIN t.mission m
-                        WHERE m.client.clientId = :clientId
-                          AND t.tenant.tenantId = :tenantId
-                          AND t.status = 'APPROVED'
-                        ORDER BY t.year DESC, t.month DESC
-                        """)
-        List<Timesheet> findApprovedByClient(
-                        @Param("clientId") String clientId,
-                        @Param("tenantId") String tenantId);
+  @Query("""
+      SELECT t FROM Timesheet t
+      JOIN t.mission m
+      WHERE m.client.clientId = :clientId
+        AND t.tenant.tenantId = :tenantId
+        AND t.status = 'APPROVED'
+      ORDER BY t.year DESC, t.month DESC
+      """)
+  List<Timesheet> findApprovedByClient(
+      @Param("clientId") String clientId,
+      @Param("tenantId") String tenantId);
 
-        Page<Timesheet> findAllByTenantTenantId(String tenantId, Pageable pageable);
+  Page<Timesheet> findAllByTenantTenantId(String tenantId, Pageable pageable);
+
+  // ── Analytics / Reports queries ──────────────────────────────────────
+
+  @Query("""
+      SELECT new com.shegami.hr_saas.modules.reporting.dto.shared.CountByStatusDto(
+          CAST(t.status AS string), COUNT(t))
+      FROM Timesheet t
+      WHERE t.tenant.tenantId = :tenantId
+      GROUP BY t.status
+      """)
+  java.util.List<com.shegami.hr_saas.modules.reporting.dto.shared.CountByStatusDto> countByStatusAndTenantId(
+      @Param("tenantId") String tenantId);
+
+  @Query("""
+      SELECT new com.shegami.hr_saas.modules.reporting.dto.shared.MonthlyCountDto(
+          t.month, t.year, COUNT(t))
+      FROM Timesheet t
+      WHERE t.tenant.tenantId = :tenantId
+        AND t.status IN ('SUBMITTED', 'APPROVED', 'REJECTED', 'INVOICED')
+      GROUP BY t.year, t.month
+      ORDER BY t.year ASC, t.month ASC
+      """)
+  java.util.List<com.shegami.hr_saas.modules.reporting.dto.shared.MonthlyCountDto> countSubmissionsByMonthAndTenantId(
+      @Param("tenantId") String tenantId);
+
+  @Query("""
+      SELECT new com.shegami.hr_saas.modules.reporting.dto.shared.ConsultantHoursDto(
+          CONCAT(c.firstName, ' ', c.lastName), COALESCE(SUM(e.quantity), 0))
+      FROM TimesheetEntry e
+      JOIN e.timesheet t
+      JOIN t.consultant c
+      WHERE t.tenant.tenantId = :tenantId
+      GROUP BY c.consultantId, c.firstName, c.lastName
+      ORDER BY SUM(e.quantity) DESC
+      """)
+  java.util.List<com.shegami.hr_saas.modules.reporting.dto.shared.ConsultantHoursDto> findTopConsultantsByHours(
+      @Param("tenantId") String tenantId, Pageable pageable);
+
+  long countByTenantTenantId(String tenantId);
+
+  long countByTenantTenantIdAndStatus(String tenantId,
+      com.shegami.hr_saas.modules.timesheet.enums.TimesheetStatus status);
 }

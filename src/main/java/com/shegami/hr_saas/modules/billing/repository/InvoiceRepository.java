@@ -61,4 +61,28 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
         java.util.List<com.shegami.hr_saas.modules.reporting.dto.shared.MonthlyRevenueDto> findMonthlyRevenueTrend(
                         @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate,
                         @org.springframework.data.repository.query.Param("tenantId") String tenantId);
+
+        // ── Analytics / Reports queries ──────────────────────────────────────
+
+        @org.springframework.data.jpa.repository.Query("SELECT i FROM Invoice i WHERE i.tenant.tenantId = :tenantId AND i.status IN ('SENT', 'OVERDUE')")
+        java.util.List<Invoice> findAllSentAndOverdueByTenantId(
+                        @org.springframework.data.repository.query.Param("tenantId") String tenantId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT new com.shegami.hr_saas.modules.reporting.dto.shared.RevenueByProjectDto(p.name, SUM(i.totalAmount)) FROM Invoice i JOIN i.timesheet t JOIN t.mission m JOIN m.project p WHERE i.tenant.tenantId = :tenantId AND i.status = 'PAID' GROUP BY p.name ORDER BY SUM(i.totalAmount) DESC")
+        java.util.List<com.shegami.hr_saas.modules.reporting.dto.shared.RevenueByProjectDto> findRevenueByProject(
+                        @org.springframework.data.repository.query.Param("tenantId") String tenantId,
+                        Pageable pageable);
+
+        @org.springframework.data.jpa.repository.Query("SELECT new com.shegami.hr_saas.modules.reporting.dto.shared.MonthlyRevenueDto(MONTH(i.issueDate), YEAR(i.issueDate), SUM(i.totalAmount)) FROM Invoice i WHERE i.tenant.tenantId = :tenantId AND i.issueDate >= :startDate GROUP BY YEAR(i.issueDate), MONTH(i.issueDate) ORDER BY YEAR(i.issueDate) ASC, MONTH(i.issueDate) ASC")
+        java.util.List<com.shegami.hr_saas.modules.reporting.dto.shared.MonthlyRevenueDto> findMonthlyInvoicedTrend(
+                        @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate,
+                        @org.springframework.data.repository.query.Param("tenantId") String tenantId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT SUM(i.totalAmount) FROM Invoice i WHERE i.tenant.tenantId = :tenantId AND i.status = 'PAID'")
+        java.math.BigDecimal sumPaidAmountByTenantId(
+                        @org.springframework.data.repository.query.Param("tenantId") String tenantId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT SUM(i.totalAmount) FROM Invoice i WHERE i.tenant.tenantId = :tenantId")
+        java.math.BigDecimal sumTotalInvoicedByTenantId(
+                        @org.springframework.data.repository.query.Param("tenantId") String tenantId);
 }
