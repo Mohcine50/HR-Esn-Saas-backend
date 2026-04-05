@@ -32,6 +32,9 @@ import com.shegami.hr_saas.modules.timesheet.entity.TimesheetEntry;
 import com.shegami.hr_saas.modules.timesheet.enums.TimesheetStatus;
 import com.shegami.hr_saas.modules.timesheet.repository.TimesheetEntryRepository;
 import com.shegami.hr_saas.modules.timesheet.repository.TimesheetRepository;
+import com.shegami.hr_saas.modules.notifications.entity.Notification;
+import com.shegami.hr_saas.modules.notifications.enums.*;
+import com.shegami.hr_saas.modules.notifications.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -61,6 +64,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final TimesheetEntryRepository timesheetEntryRepository;
     private final InvoiceRepository invoiceRepository;
     private final InvoiceLineRepository invoiceLineRepository;
+    private final NotificationRepository notificationRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -126,11 +130,16 @@ public class DatabaseSeeder implements CommandLineRunner {
         Mission mission4 = createMission("Data Mapping", project3, client2, tenant, consultant3, managerEmployee);
 
         // 8. Timesheets
-        seedTimesheets(tenant, consultant1, mission1);
+        Timesheet ts1 = seedTimesheets(tenant, consultant1, mission1);
         seedTimesheets(tenant, consultant2, mission2);
 
         // 9. Invoices
-        seedInvoices(tenant, client1);
+        Invoice inv1 = seedInvoices(tenant, client1, InvoiceStatus.PAID, "INV-2026-001", new BigDecimal("12000.00"));
+        Invoice inv2 = seedInvoices(tenant, client1, InvoiceStatus.OVERDUE, "INV-2026-002", new BigDecimal("8500.00"));
+        Invoice inv3 = seedInvoices(tenant, client2, InvoiceStatus.SENT, "INV-2026-003", new BigDecimal("4200.00"));
+
+        // 10. Notifications
+        seedNotifications(tenant, adminUser, managerUser, consultant1, mission1, ts1, inv1, inv2);
 
         log.info("Database seeding completed successfully!");
     }
@@ -237,7 +246,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         return missionRepository.save(mission);
     }
 
-    private void seedTimesheets(Tenant tenant, Consultant consultant, Mission mission) {
+    private Timesheet seedTimesheets(Tenant tenant, Consultant consultant, Mission mission) {
         Timesheet ts = new Timesheet();
         ts.setTenant(tenant);
         ts.setConsultant(consultant);
@@ -257,35 +266,116 @@ public class DatabaseSeeder implements CommandLineRunner {
             ts.getEntries().add(entry);
             timesheetEntryRepository.save(entry);
         }
-        timesheetRepository.save(ts);
+        return timesheetRepository.save(ts);
     }
 
-    private void seedInvoices(Tenant tenant, Client client) {
+    private Invoice seedInvoices(Tenant tenant, Client client, InvoiceStatus status, String number, BigDecimal total) {
         Invoice invoice = new Invoice();
         invoice.setTenant(tenant);
         invoice.setClient(client);
-        invoice.setInvoiceNumber("INV-2026-00" + (invoiceRepository.count() + 1));
-        invoice.setIssueDate(LocalDate.now());
-        invoice.setDueDate(LocalDate.now().plusDays(30));
-        invoice.setStatus(InvoiceStatus.SENT);
+        invoice.setInvoiceNumber(number);
+        invoice.setIssueDate(LocalDate.now().minusDays(10));
+        invoice.setDueDate(LocalDate.now().plusDays(status == InvoiceStatus.OVERDUE ? -1 : 20));
+        invoice.setStatus(status);
         invoice.setClientNameAtBilling(client.getFullName());
         invoice.setClientAddressAtBilling(client.getAddress());
         invoice.setVatNumberAtBilling(client.getVatNumber());
-        invoice.setSubTotal(new BigDecimal("10000.00"));
-        invoice.setVatAmount(new BigDecimal("2000.00"));
-        invoice.setTotalAmount(new BigDecimal("12000.00"));
+        invoice.setSubTotal(total.divide(new BigDecimal("1.2"), 2, java.math.RoundingMode.HALF_UP));
+        invoice.setVatAmount(total.subtract(invoice.getSubTotal()));
+        invoice.setTotalAmount(total);
         invoice.setInvoiceLines(new HashSet<>());
         invoice = invoiceRepository.save(invoice);
 
         InvoiceLine line = new InvoiceLine();
         line.setTenant(tenant);
         line.setInvoice(invoice);
-        line.setDescription("Professional Services - Billing Month");
-        line.setQuantity(new BigDecimal("20"));
-        line.setUnitPrice(new BigDecimal("500.00"));
-        line.setTotalLineAmount(new BigDecimal("10000.00"));
+        line.setDescription("Professional Services - " + number);
+        line.setQuantity(new BigDecimal("1"));
+        line.setUnitPrice(invoice.getSubTotal());
+        line.setTotalLineAmount(invoice.getSubTotal());
         invoice.getInvoiceLines().add(line);
         invoiceLineRepository.save(line);
-        invoiceRepository.save(invoice);
+        return invoiceRepository.save(invoice);
+    }
+
+    private void seedNotifications(Tenant tenant, User admin, User manager, Consultant consultant, Mission mission,
+            Timesheet ts, Invoice invoice, Invoice overdueInvoice) {
+        // Mission notifications
+        createNotification(tenant, consultant.getUser(), admin, NotificationType.CONSULTANT_ASSIGNED,
+                EntityType.MISSION, mission.getMissionId(), "Mission Assigned",
+                "You have been assigned to: " + mission.getTitle());
+        createNotification(tenant, manager, admin, NotificationType.MISSION_STATUS_CHANGED, EntityType.MISSION,
+                mission.getMissionId(), "Mission Update", mission.getTitle() + " status has been updated to ACTIVE");
+
+        // Timesheet notifications
+        createNotification(tenant, manager, consultant.getUser(), NotificationType.TIMESHEET_SUBMITTED,
+                EntityType.TIMESHEET, ts.getTimesheetId(), "Timesheet for Approval",
+                consultant.getFirstName() + " submitted their monthly timesheet.");
+        createNotification(tenant, consultant.getUser(), manager, NotificationType.TIMESHEET_APPROVED,
+                EntityType.TIMESHEET, ts.getTimesheetId(), "Timesheet Approved",
+                "Your timesheet for " + ts.getMonth() + "/" + ts.getYear() + " has been approved.");
+        createNotification(tenant, consultant.getUser(), manager, NotificationType.TIMESHEET_REJECTED,
+                EntityType.TIMESHEET, ts.getTimesheetId(), "Timesheet Rejected",
+                "Please check your timesheet for some missing entries.");
+
+        // Invoice notifications
+        createNotification(tenant, admin, null, NotificationType.INVOICE_GENERATED, EntityType.INVOICE,
+                invoice.getInvoiceId(), "New Invoice",
+                "Invoice " + invoice.getInvoiceNumber() + " has been generated.");
+        createNotification(tenant, admin, null, NotificationType.INVOICE_OVERDUE, EntityType.INVOICE,
+                invoice.getInvoiceId(), "Payment Overdue",
+                "Invoice " + invoice.getInvoiceNumber() + " is past its due date!");
+        createNotification(tenant, admin, manager, NotificationType.PAYMENT_RECORDED, EntityType.INVOICE,
+                invoice.getInvoiceId(), "Payment Received",
+                "Payment for " + invoice.getInvoiceNumber() + " has been confirmed.");
+
+        // Comment notifications (dummy)
+        createNotification(tenant, admin, manager, NotificationType.MISSION_COMMENT_ADDED, EntityType.MISSION,
+                mission.getMissionId(), "New Comment",
+                manager.getFirstName() + " left a comment on " + mission.getTitle());
+
+        // System notifications
+        createNotification(tenant, admin, null, NotificationType.SYSTEM_ANNOUNCEMENT, EntityType.SYSTEM, null,
+                "Server Maintenance", "Planned maintenance on Sunday at 2 AM.");
+        createNotification(tenant, consultant.getUser(), null, NotificationType.SYSTEM_UPDATE, EntityType.SYSTEM, null,
+                "New Feature", "You can now export your missions as PDF!");
+
+        // HR & Invitation notifications
+        createNotification(tenant, consultant.getUser(), admin, NotificationType.INVITATION_SENT, EntityType.ACCOUNT,
+                null, "Invitation Sent", "Your invitation to join Shegami Corp has been sent.");
+        createNotification(tenant, admin, manager, NotificationType.EMPLOYEE_ONBOARDED, EntityType.ACCOUNT,
+                manager.getUserId(), "New Employee", manager.getFirstName() + " has completed onboarding.");
+
+        // Mission & Project remaining
+        createNotification(tenant, consultant.getUser(), admin, NotificationType.CONSULTANT_REMOVED_FROM_MISSION,
+                EntityType.MISSION, mission.getMissionId(), "Removed from Mission",
+                "You have been removed from " + mission.getTitle());
+        createNotification(tenant, consultant.getUser(), null, NotificationType.MISSION_DEADLINE_APPROACHING,
+                EntityType.MISSION, mission.getMissionId(), "Deadline Warning",
+                "Mission " + mission.getTitle() + " ends in 3 days.");
+        createNotification(tenant, consultant.getUser(), admin, NotificationType.PROJECT_CONSULTANT_ASSIGNED,
+                EntityType.PROJECT, mission.getProject().getProjectId(), "Project Assigned",
+                "You've been assigned to project: " + mission.getProject().getName());
+        createNotification(tenant, manager, admin, NotificationType.PROJECT_STATUS_CHANGED, EntityType.PROJECT,
+                mission.getProject().getProjectId(), "Project Update",
+                "Project " + mission.getProject().getName() + " is now IN_PROGRESS");
+    }
+
+    private void createNotification(Tenant tenant, User recipient, User actor, NotificationType type, EntityType eType,
+            String eId, String title, String msg) {
+        Notification n = Notification.builder()
+                .recipient(recipient)
+                .actor(actor)
+                .actorName(actor != null ? actor.getFirstName() + " " + actor.getLastName() : "System")
+                .notificationType(type)
+                .entityType(eType)
+                .entityId(eId)
+                .title(title)
+                .message(msg)
+                .status(NotificationStatus.UNREAD)
+                .sentInApp(true)
+                .build();
+        n.setTenant(tenant);
+        notificationRepository.save(n);
     }
 }
