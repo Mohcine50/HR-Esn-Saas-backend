@@ -26,6 +26,26 @@ A robust, enterprise-grade **Modular Monolith SaaS** designed for ESNs (Entrepri
 ---
 
 ## 📸 Screenshots
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="https://github.com/user-attachments/assets/81b7e99a-8421-450d-8f28-4167ab8f62f4" width="100%"/></td>
+      <td><img src="https://github.com/user-attachments/assets/cf2e4b60-d515-437c-983b-d41c96e1a418" width="100%"/></td>
+    </tr>
+    <tr>
+      <td><img src="https://github.com/user-attachments/assets/33671e63-b37c-4dfb-9b36-9156888e3957" width="100%"/></td>
+      <td><img src="https://github.com/user-attachments/assets/d0736d9a-c452-4340-bcde-bc43c33420f8" width="100%"/></td>
+    </tr>
+    <tr>
+      <td><img src="https://github.com/user-attachments/assets/8941003a-3640-4233-bf97-a0de197c60e7" width="100%"/></td>
+      <td><img src="https://github.com/user-attachments/assets/feb35ce1-a44d-4231-93a2-8b3f1d3ae9a8" width="100%"/></td>
+    </tr>
+    <tr>
+      <td><img src="https://github.com/user-attachments/assets/fa1e3f4f-4379-4277-9dbf-abcc0ad6da00" width="100%"/></td>
+      <td><img src="https://github.com/user-attachments/assets/7ba9c27f-8b51-4572-b4fc-00711a689b1b" width="100%"/></td>
+    </tr>
+  </table>
+</div>
 
 ---
 
