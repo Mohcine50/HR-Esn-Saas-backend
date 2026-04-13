@@ -33,3 +33,5 @@ build/
 .vscode/
 
 *.md
+
+!README.md
